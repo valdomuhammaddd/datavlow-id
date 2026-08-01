@@ -85,11 +85,13 @@ async function handleExport(params: URLSearchParams) {
       });
     }
 
-    // PDF-ready structured payload for client/print pipeline
-    return jsonOk({
-      format: "pdf",
-      filename: `datavlow-ledger-${stamp}.pdf`,
-      document: buildPdfPayload(rows),
+    const document = buildPdfPayload(rows);
+    return new NextResponse(document.html, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": `inline; filename="datavlow-ledger-${stamp}.html"`,
+      },
     });
   } catch (err) {
     console.error("[ledger/export] unhandled error:", err);

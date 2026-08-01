@@ -36,6 +36,7 @@ const MESSAGES: Record<LocaleCode, Record<string, string>> = {
     logout: "Keluar",
     addDevice: "Tambah Perangkat",
     logicBuilder: "Logic Builder",
+    simulation: "Simulasi",
     commandCenter: "Pusat Komando",
     historicalLedger: "Buku Besar Historis",
     historicalLedgerDesc:
@@ -96,6 +97,7 @@ const MESSAGES: Record<LocaleCode, Record<string, string>> = {
     logout: "Logout",
     addDevice: "Add Device",
     logicBuilder: "Logic Builder",
+    simulation: "Simulation",
     commandCenter: "Command Center",
     historicalLedger: "Historical Ledger",
     historicalLedgerDesc:

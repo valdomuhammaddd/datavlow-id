@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { memo, useDeferredValue, useMemo } from "react";
 
-import { ThemeLanguageControls } from "@/components/ui/theme-language-controls";
+import { AppShell } from "@/components/layout/app-shell";
 import { useGlobalUI } from "@/context/GlobalUIContext";
+import { useFleetStats } from "@/hooks/useFleetStats";
 import {
-  useTelemetryStream,
-  type ChartPoint,
-} from "@/hooks/useTelemetryStream";
+  useRealtimeTelemetry,
+  type RealtimeChartPoint as ChartPoint,
+} from "@/hooks/useRealtimeTelemetry";
 import { buildKineticWavePath } from "@/lib/telemetry/chart-path";
 import type { TelemetryLog, WaterStatus } from "@/types/database.types";
 
@@ -51,14 +52,16 @@ function tempHint(temp: number | null | undefined, baseline = 24.5): string {
 
 export function PrecisionTelemetryDashboard() {
   const { t } = useGlobalUI();
-  const { latest, chartSeries, isLive, isLoading, error } = useTelemetryStream();
+  const { latest, chartSeries, isLive, isLoading, error } =
+    useRealtimeTelemetry();
+  const fleet = useFleetStats();
 
-  // Defer chart path work so KPI banner paints first on high-frequency inserts
   const deferredSeries = useDeferredValue(chartSeries);
 
   const waterStatus = latest?.water_status ?? null;
   const crispScore =
     latest?.crisp_score != null ? Number(latest.crisp_score) : null;
+  const actionMessage = latest?.action_message ?? null;
 
   const badge = useMemo(() => {
     if (waterStatus === "Baik") return t("systemOptimal");
@@ -68,126 +71,62 @@ export function PrecisionTelemetryDashboard() {
   }, [waterStatus, t]);
 
   return (
-    <>
-      <header className="fixed top-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface-glass backdrop-blur-xl border-b border-border-glass">
-        <div className="flex items-center gap-8">
-          <h1 className="font-display-lg text-headline-md font-bold text-primary tracking-tighter">
-            DATAVLOW.ID
-          </h1>
-          <nav className="hidden md:flex gap-6">
-            <Link
-              className="text-primary font-bold border-b-2 border-primary pb-1 font-body-base text-body-base"
-              href="/"
-            >
-              {t("dashboard")}
-            </Link>
-            <Link
-              className="text-on-surface-variant hover:text-primary transition-colors font-body-base text-body-base"
-              href="/"
-            >
-              {t("network")}
-            </Link>
-            <Link
-              className="text-on-surface-variant hover:text-primary transition-colors font-body-base text-body-base"
-              href="/"
-            >
-              {t("devices")}
-            </Link>
-          </nav>
-        </div>
-        <ThemeLanguageControls />
-      </header>
+    <AppShell>
+      <StatusBanner
+        isLoading={isLoading}
+        waterStatus={waterStatus}
+        crispScore={crispScore}
+        actionMessage={actionMessage}
+        badge={badge}
+        fuzzyLabel={t("fuzzyEngine")}
+        scoreLabel={t("aggregateScore")}
+        error={error}
+      />
 
-      <aside className="fixed left-0 top-0 h-full hidden lg:flex flex-col py-24 w-20 border-r border-border-glass bg-bg-obsidian z-40 items-center gap-8">
-        <Link
-          href="/"
-          className="material-symbols-outlined text-primary bg-surface-glass p-3 rounded-xl border border-primary/20"
-        >
-          dashboard
-        </Link>
-        <button
-          type="button"
-          className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all"
-        >
-          router
-        </button>
-        <button
-          type="button"
-          className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all"
-        >
-          account_tree
-        </button>
-        <Link
-          href="/analytics"
-          className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all"
-        >
-          analytics
-        </Link>
-        <div className="mt-auto flex flex-col gap-6 pb-8">
-          <button
-            type="button"
-            className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all"
-          >
-            settings
-          </button>
-          <button
-            type="button"
-            className="material-symbols-outlined text-on-surface-variant hover:text-error transition-all"
-          >
-            logout
-          </button>
-        </div>
-      </aside>
-
-      <main className="pt-24 pl-margin-desktop pr-margin-desktop lg:pl-32 pb-margin-desktop min-h-screen">
-        <StatusBanner
-          isLoading={isLoading}
-          waterStatus={waterStatus}
-          crispScore={crispScore}
-          badge={badge}
-          fuzzyLabel={t("fuzzyEngine")}
-          scoreLabel={t("aggregateScore")}
-          error={error}
-        />
-
-        <KpiGrid latest={latest} realTimeLabel={t("realTime")} labels={{
+      <KpiGrid
+        latest={latest}
+        realTimeLabel={t("realTime")}
+        labels={{
           acidity: t("acidity"),
           tds: t("tdsLevel"),
           turbidity: t("turbidity"),
           temperature: t("temperature"),
-        }} />
+        }}
+      />
 
-        <KineticChart
-          series={deferredSeries}
-          isLive={isLive}
-          title={t("telemetryTopography")}
-          subtitle={t("kineticTrends")}
-          liveLabel={t("liveStream")}
-          connectingLabel={t("connecting")}
-        />
+      <KineticChart
+        series={deferredSeries}
+        isLive={isLive}
+        title={t("telemetryTopography")}
+        subtitle={t("kineticTrends")}
+        liveLabel={t("liveStream")}
+        connectingLabel={t("connecting")}
+      />
 
-        <UtilityRow
-          waterStatus={waterStatus}
-          isLive={isLive}
-          isLoading={isLoading}
-          labels={{
-            nodesOnline: t("nodesOnline"),
-            systemAlerts: t("systemAlerts"),
-            uplinkStatus: t("uplinkStatus"),
-            none: t("none"),
-            critical: t("critical"),
-            healthy: t("healthy"),
-            alert: t("alert"),
-            live: t("live"),
-            syncing: t("syncing"),
-            idle: t("idle"),
-          }}
-        />
-      </main>
+      <UtilityRow
+        online={fleet.summary.online}
+        total={fleet.summary.total}
+        openAlerts={fleet.openAlerts}
+        isLive={isLive}
+        isLoading={isLoading || fleet.isLoading}
+        labels={{
+          nodesOnline: t("nodesOnline"),
+          systemAlerts: t("systemAlerts"),
+          uplinkStatus: t("uplinkStatus"),
+          none: t("none"),
+          critical: t("critical"),
+          healthy: t("healthy"),
+          alert: t("alert"),
+          live: t("live"),
+          syncing: t("syncing"),
+          idle: t("idle"),
+        }}
+      />
 
-      <button
-        type="button"
-        className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-lg glow-cyan hover:scale-110 active:scale-95 transition-all z-50"
+      <Link
+        href="/devices"
+        className="fixed bottom-24 md:bottom-8 right-6 md:right-8 w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-lg glow-cyan hover:scale-110 active:scale-95 transition-all z-40"
+        aria-label={t("addDevice")}
       >
         <span
           className="material-symbols-outlined text-3xl"
@@ -195,8 +134,8 @@ export function PrecisionTelemetryDashboard() {
         >
           add
         </span>
-      </button>
-    </>
+      </Link>
+    </AppShell>
   );
 }
 
@@ -204,6 +143,7 @@ const StatusBanner = memo(function StatusBanner({
   isLoading,
   waterStatus,
   crispScore,
+  actionMessage,
   badge,
   fuzzyLabel,
   scoreLabel,
@@ -212,6 +152,7 @@ const StatusBanner = memo(function StatusBanner({
   isLoading: boolean;
   waterStatus: WaterStatus | string | null;
   crispScore: number | null;
+  actionMessage: string | null;
   badge: string;
   fuzzyLabel: string;
   scoreLabel: string;
@@ -239,6 +180,11 @@ const StatusBanner = memo(function StatusBanner({
                 />
               </div>
             </div>
+            {actionMessage ? (
+              <p className="mt-2 text-body-base font-body-base text-on-surface-variant max-w-xl">
+                {actionMessage}
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-col items-end">
             <span className="text-label-caps font-label-caps text-primary mb-1">
@@ -404,9 +350,9 @@ const KineticChart = memo(function KineticChart({
   const bufferLoad = Math.min(100, Math.round((series.length / 25) * 100));
 
   return (
-    <section className="grid grid-cols-1 gap-gutter">
-      <div className="glass-panel rounded-2xl relative overflow-hidden min-h-[500px] flex flex-col p-8">
-        <div className="flex justify-between items-center mb-12 z-10">
+    <section className="mb-gutter">
+      <div className="glass-panel rounded-xl p-6 relative overflow-hidden min-h-[320px]">
+        <div className="flex justify-between items-start mb-6 relative z-10">
           <div>
             <h3 className="text-headline-md font-headline-md text-on-surface">
               {title}
@@ -415,44 +361,23 @@ const KineticChart = memo(function KineticChart({
               {subtitle}
             </p>
           </div>
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-high rounded-lg border border-border-glass">
-              <div
-                className={`w-3 h-3 rounded-full bg-primary glow-cyan ${isLive ? "animate-pulse" : "opacity-40"}`}
-              />
-              <span className="text-label-caps font-label-caps text-on-surface">
-                {isLive ? liveLabel : connectingLabel}
-              </span>
-            </div>
-            <button
-              type="button"
-              className="material-symbols-outlined text-on-surface-variant hover:text-on-surface p-2 glass-panel rounded-lg"
+          <div className="flex items-center gap-3">
+            <span
+              className={
+                isLive
+                  ? "text-label-caps font-label-caps text-success-glow"
+                  : "text-label-caps font-label-caps text-on-surface-variant"
+              }
             >
-              more_vert
-            </button>
+              {isLive ? liveLabel : connectingLabel}
+            </span>
+            <span className="text-data-mono font-data-mono text-primary">
+              {bufferLoad}% UTILIZED
+            </span>
           </div>
         </div>
 
-        <div className="flex-grow relative kinetic-grid rounded-xl overflow-hidden chart-flow-mask">
-          <div className="absolute bottom-8 left-8 flex gap-8 z-10">
-            <div className="flex flex-col">
-              <span className="text-label-caps font-label-caps text-on-surface-variant">
-                SAMPLING RATE
-              </span>
-              <span className="text-data-mono font-data-mono text-primary">
-                {series.length > 1 ? "STREAM / PKT" : "125ms / PKT"}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-label-caps font-label-caps text-on-surface-variant">
-                BUFFER LOAD
-              </span>
-              <span className="text-data-mono font-data-mono text-primary">
-                {bufferLoad}% UTILIZED
-              </span>
-            </div>
-          </div>
-
+        <div className="relative h-64">
           <svg
             className="absolute bottom-0 w-full h-64 overflow-visible pointer-events-none"
             preserveAspectRatio="none"
@@ -491,19 +416,26 @@ const KineticChart = memo(function KineticChart({
 });
 
 const UtilityRow = memo(function UtilityRow({
-  waterStatus,
+  online,
+  total,
+  openAlerts,
   isLive,
   isLoading,
   labels,
 }: {
-  waterStatus: WaterStatus | string | null;
+  online: number;
+  total: number;
+  openAlerts: number;
   isLive: boolean;
   isLoading: boolean;
   labels: Record<string, string>;
 }) {
   return (
     <section className="mt-gutter grid grid-cols-1 lg:grid-cols-3 gap-widget-gap">
-      <div className="glass-panel p-6 rounded-xl flex items-center justify-between">
+      <Link
+        href="/devices"
+        className="glass-panel p-6 rounded-xl flex items-center justify-between hover:border-primary/40 transition-colors"
+      >
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-full glass-panel flex items-center justify-center">
             <span className="material-symbols-outlined text-primary">memory</span>
@@ -513,18 +445,18 @@ const UtilityRow = memo(function UtilityRow({
               {labels.nodesOnline}
             </span>
             <h4 className="text-headline-md font-headline-md text-on-surface">
-              14 / 15
+              {online} / {total}
             </h4>
           </div>
         </div>
-        <button
-          type="button"
-          className="material-symbols-outlined text-on-surface-variant"
-        >
+        <span className="material-symbols-outlined text-on-surface-variant">
           chevron_right
-        </button>
-      </div>
-      <div className="glass-panel p-6 rounded-xl flex items-center justify-between">
+        </span>
+      </Link>
+      <Link
+        href="/settings?tab=alerts"
+        className="glass-panel p-6 rounded-xl flex items-center justify-between hover:border-primary/40 transition-colors"
+      >
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-full glass-panel flex items-center justify-center">
             <span className="material-symbols-outlined text-secondary">
@@ -536,14 +468,14 @@ const UtilityRow = memo(function UtilityRow({
               {labels.systemAlerts}
             </span>
             <h4 className="text-headline-md font-headline-md text-on-surface">
-              {waterStatus === "Tidak Baik" ? labels.critical : labels.none}
+              {openAlerts > 0 ? `${openAlerts} ${labels.critical}` : labels.none}
             </h4>
           </div>
         </div>
         <span className="px-2 py-1 bg-surface-container text-success-glow text-label-caps font-label-caps rounded">
-          {waterStatus === "Tidak Baik" ? labels.alert : labels.healthy}
+          {openAlerts > 0 ? labels.alert : labels.healthy}
         </span>
-      </div>
+      </Link>
       <div className="glass-panel p-6 rounded-xl flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-full glass-panel flex items-center justify-center">

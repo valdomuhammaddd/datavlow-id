@@ -43,14 +43,6 @@ export async function POST(request: Request) {
       return jsonError(result.error, result.status);
     }
 
-    await supabase
-      .from("devices")
-      .update({
-        latency_ms: result.latency_ms,
-        health: result.health,
-      })
-      .eq("id", deviceId);
-
     return jsonOk({
       device: result.device,
       latency_ms: result.latency_ms,

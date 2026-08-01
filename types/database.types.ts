@@ -12,6 +12,55 @@ export type WaterStatus = "Baik" | "Cukup Baik" | "Tidak Baik";
 
 export type WorkflowStatus = "draft" | "live" | "archived";
 
+export type OperatorRole = "admin" | "operator" | "viewer";
+
+export type AlertSeverity = "info" | "warning" | "critical";
+
+export type Profile = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  role: OperatorRole;
+  created_at: string;
+};
+
+export type ProfileInsert = {
+  id: string;
+  email?: string | null;
+  display_name?: string | null;
+  role?: OperatorRole;
+  created_at?: string;
+};
+
+export type ProfileUpdate = {
+  id?: string;
+  email?: string | null;
+  display_name?: string | null;
+  role?: OperatorRole;
+  created_at?: string;
+};
+
+export type Site = {
+  id: string;
+  name: string;
+  region: string;
+  created_at: string;
+};
+
+export type SiteInsert = {
+  id?: string;
+  name: string;
+  region?: string;
+  created_at?: string;
+};
+
+export type SiteUpdate = {
+  id?: string;
+  name?: string;
+  region?: string;
+  created_at?: string;
+};
+
 export type Device = {
   id: string;
   api_key: string;
@@ -20,6 +69,9 @@ export type Device = {
   last_ping: string | null;
   latency_ms: number | null;
   health: string | null;
+  site_id: string | null;
+  revoked_at: string | null;
+  notes: string | null;
 };
 
 export type DeviceInsert = {
@@ -30,6 +82,9 @@ export type DeviceInsert = {
   last_ping?: string | null;
   latency_ms?: number | null;
   health?: string | null;
+  site_id?: string | null;
+  revoked_at?: string | null;
+  notes?: string | null;
 };
 
 export type DeviceUpdate = {
@@ -40,6 +95,9 @@ export type DeviceUpdate = {
   last_ping?: string | null;
   latency_ms?: number | null;
   health?: string | null;
+  site_id?: string | null;
+  revoked_at?: string | null;
+  notes?: string | null;
 };
 
 export type TelemetryLog = {
@@ -168,9 +226,81 @@ export type SimulationHardwareUpdate = {
   updated_at?: string;
 };
 
+export type AuditLog = {
+  id: number;
+  actor_id: string | null;
+  action: string;
+  entity: string;
+  entity_id: string | null;
+  meta: Json;
+  created_at: string;
+};
+
+export type AuditLogInsert = {
+  id?: number;
+  actor_id?: string | null;
+  action: string;
+  entity: string;
+  entity_id?: string | null;
+  meta?: Json;
+  created_at?: string;
+};
+
+export type AuditLogUpdate = {
+  id?: number;
+  actor_id?: string | null;
+  action?: string;
+  entity?: string;
+  entity_id?: string | null;
+  meta?: Json;
+  created_at?: string;
+};
+
+export type AlertEvent = {
+  id: number;
+  device_id: string | null;
+  severity: AlertSeverity;
+  water_status: string | null;
+  message: string;
+  acknowledged: boolean;
+  created_at: string;
+};
+
+export type AlertEventInsert = {
+  id?: number;
+  device_id?: string | null;
+  severity: AlertSeverity;
+  water_status?: string | null;
+  message: string;
+  acknowledged?: boolean;
+  created_at?: string;
+};
+
+export type AlertEventUpdate = {
+  id?: number;
+  device_id?: string | null;
+  severity?: AlertSeverity;
+  water_status?: string | null;
+  message?: string;
+  acknowledged?: boolean;
+  created_at?: string;
+};
+
 export type Database = {
   public: {
     Tables: {
+      profiles: {
+        Row: Profile;
+        Insert: ProfileInsert;
+        Update: ProfileUpdate;
+        Relationships: [];
+      };
+      sites: {
+        Row: Site;
+        Insert: SiteInsert;
+        Update: SiteUpdate;
+        Relationships: [];
+      };
       devices: {
         Row: Device;
         Insert: DeviceInsert;
@@ -203,12 +333,28 @@ export type Database = {
         Update: SimulationHardwareUpdate;
         Relationships: [];
       };
+      audit_logs: {
+        Row: AuditLog;
+        Insert: AuditLogInsert;
+        Update: AuditLogUpdate;
+        Relationships: [];
+      };
+      alert_events: {
+        Row: AlertEvent;
+        Insert: AlertEventInsert;
+        Update: AlertEventUpdate;
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
       purge_old_telemetry_logs: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      mark_stale_devices: {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };

@@ -1,4 +1,4 @@
-import type { ChartPoint } from "@/hooks/useTelemetryStream";
+import type { RealtimeChartPoint as ChartPoint } from "@/hooks/useRealtimeTelemetry";
 
 /**
  * Builds an SVG path for the kinetic wave from telemetry points (crisp_score).

@@ -73,6 +73,60 @@ function downloadBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+/** Open a print-ready ledger document (Save as PDF from the browser). */
+export function exportToPrintablePdf(
+  data: ExportRow[],
+  title = "DATAVLOW.ID Water Quality Ledger",
+): void {
+  if (typeof window === "undefined") {
+    throw new Error("exportToPrintablePdf can only run in the browser");
+  }
+  if (!data.length) {
+    throw new Error("No data available to export");
+  }
+
+  const headers = Object.keys(data[0]);
+  const rowsHtml = data
+    .map(
+      (row) =>
+        `<tr>${headers
+          .map((h) => `<td>${escapeHtml(String(row[h] ?? ""))}</td>`)
+          .join("")}</tr>`,
+    )
+    .join("");
+
+  const html = `<!doctype html>
+<html><head><meta charset="utf-8"/><title>${escapeHtml(title)}</title>
+<style>
+  body{font-family:ui-monospace,Menlo,monospace;padding:24px;color:#111}
+  h1{font-size:18px;margin:0 0 8px}
+  p{font-size:12px;color:#555;margin:0 0 16px}
+  table{border-collapse:collapse;width:100%;font-size:11px}
+  th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}
+  th{background:#f3f4f6}
+</style></head>
+<body>
+  <h1>${escapeHtml(title)}</h1>
+  <p>Generated ${new Date().toISOString()} · ${data.length} rows</p>
+  <table><thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead>
+  <tbody>${rowsHtml}</tbody></table>
+  <script>window.onload=()=>window.print()</script>
+</body></html>`;
+
+  const win = window.open("", "_blank", "noopener,noreferrer");
+  if (!win) throw new Error("Popup blocked — allow popups to export PDF");
+  win.document.write(html);
+  win.document.close();
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 /** Map telemetry log rows into a flat export-friendly shape. */
 export function telemetryToExportRows(
   logs: Array<{

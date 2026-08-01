@@ -47,7 +47,7 @@ function escapeCsv(value: string | number | null | undefined): string {
   return raw;
 }
 
-/** PDF-ready document model (consumable by a renderer / print pipeline). */
+/** PDF-ready document model + printable HTML for Save-as-PDF. */
 export function buildPdfPayload(rows: ExportRow[]) {
   const columns = [
     "timestamp",
@@ -69,15 +69,51 @@ export function buildPdfPayload(rows: ExportRow[]) {
     {} as Record<string, number>,
   );
 
+  const title = "DATAVLOW.ID Water Quality Ledger";
+  const generatedAt = new Date().toISOString();
+  const headerCells = columns.map((c) => `<th>${c}</th>`).join("");
+  const bodyRows = rows
+    .map(
+      (r) =>
+        `<tr>${columns
+          .map((c) => `<td>${escapeHtml(String(r[c] ?? ""))}</td>`)
+          .join("")}</tr>`,
+    )
+    .join("");
+
+  const html = `<!doctype html>
+<html><head><meta charset="utf-8"/><title>${title}</title>
+<style>
+  body{font-family:ui-monospace,Menlo,monospace;padding:24px;color:#111}
+  h1{font-size:18px} table{border-collapse:collapse;width:100%;font-size:11px}
+  th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}
+  th{background:#f3f4f6}
+</style></head>
+<body>
+  <h1>${title}</h1>
+  <p>Generated ${generatedAt} · ${rows.length} rows</p>
+  <p>Status counts: ${escapeHtml(JSON.stringify(statusCounts))}</p>
+  <table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table>
+</body></html>`;
+
   return {
     format: "pdf" as const,
-    title: "DATAVLOW.ID Water Quality Ledger",
-    generatedAt: new Date().toISOString(),
+    title,
+    generatedAt,
     summary: {
       rowCount: rows.length,
       statusCounts,
     },
     columns: [...columns],
     rows: rows.map((r) => columns.map((c) => r[c])),
+    html,
   };
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

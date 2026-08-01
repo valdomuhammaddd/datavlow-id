@@ -1,5 +1,6 @@
 import { jsonError, jsonOk, parseJsonBody } from "@/lib/api/http";
 import { isObject, toNonEmptyString } from "@/lib/api/validate";
+import { writeAudit } from "@/lib/auth/audit";
 import { listDevices, registerDevice } from "@/lib/devices/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -45,9 +46,16 @@ export async function POST(request: Request) {
     if (!name) return jsonError("name is required", 400);
 
     const api_key = toNonEmptyString(body.data.api_key, 128) ?? undefined;
+    const site_id = toNonEmptyString(body.data.site_id, 64) ?? null;
+    const notes = toNonEmptyString(body.data.notes, 500) ?? null;
 
     const supabase = createAdminClient();
-    const { data, error } = await registerDevice(supabase, { name, api_key });
+    const { data, error } = await registerDevice(supabase, {
+      name,
+      api_key,
+      site_id,
+      notes,
+    });
 
     if (error) {
       console.error("[devices] register failed:", error.message);
@@ -58,6 +66,7 @@ export async function POST(request: Request) {
       );
     }
 
+    await writeAudit("device.register", "devices", data.id, { name });
     return jsonOk({ data }, 201);
   } catch (err) {
     console.error("[devices] unhandled error:", err);

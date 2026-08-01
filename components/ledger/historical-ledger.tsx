@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { memo, useCallback, useMemo, useState } from "react";
 
+import { AppShell } from "@/components/layout/app-shell";
 import { useGlobalUI } from "@/context/GlobalUIContext";
 import { useTelemetryLedger } from "@/hooks/useTelemetryLedger";
 import {
   exportToCSV,
   exportToJSON,
+  exportToPrintablePdf,
   telemetryToExportRows,
 } from "@/lib/exportData";
 import type { TelemetryLog } from "@/types/database.types";
@@ -43,12 +45,18 @@ export function HistoricalLedger() {
     pageRows,
     query,
     setQuery,
+    statusFilter,
+    setStatusFilter,
+    filtersOpen,
+    setFiltersOpen,
     page,
     setPage,
     pageCount,
+    pageWindow,
     totalEstimate,
     stats,
     isLoading,
+    isLive,
     error,
   } = useTelemetryLedger();
 
@@ -77,74 +85,19 @@ export function HistoricalLedger() {
     }
   }, [exportRows]);
 
+  const handleExportPdf = useCallback(() => {
+    try {
+      exportToPrintablePdf(exportRows, "DATAVLOW.ID Water Quality Ledger");
+      setExportError(null);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Export failed");
+    }
+  }, [exportRows]);
+
   const lastSync = filtered[0]?.created_at;
 
   return (
-    <>
-      <nav className="fixed left-0 top-0 h-full flex flex-col py-8 bg-bg-obsidian border-r border-border-glass w-64 z-50">
-        <div className="px-6 mb-10">
-          <h1 className="font-headline-md text-headline-md text-primary tracking-tight">
-            DATAVLOW.ID
-          </h1>
-          <p className="font-label-caps text-label-caps text-on-surface-variant opacity-60">
-            {t("commandCenter")}
-          </p>
-        </div>
-        <div className="flex-1 px-4 space-y-2">
-          <Link
-            className="flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-glass transition-all"
-            href="/"
-          >
-            <span className="material-symbols-outlined text-xl">dashboard</span>
-            <span className="font-label-caps text-label-caps">{t("dashboard")}</span>
-          </Link>
-          <a className="flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-glass transition-all" href="#">
-            <span className="material-symbols-outlined text-xl">router</span>
-            <span className="font-label-caps text-label-caps">{t("devices")}</span>
-          </a>
-          <a className="flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-glass transition-all" href="#">
-            <span className="material-symbols-outlined text-xl">account_tree</span>
-            <span className="font-label-caps text-label-caps">{t("logicBuilder")}</span>
-          </a>
-          <Link
-            className="flex items-center space-x-3 px-4 py-3 rounded bg-surface-glass text-primary border-l-4 border-primary translate-x-1 duration-200"
-            href="/analytics"
-          >
-            <span
-              className="material-symbols-outlined text-xl"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              analytics
-            </span>
-            <span className="font-label-caps text-label-caps">{t("analytics")}</span>
-          </Link>
-          <a className="flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-glass transition-all" href="#">
-            <span className="material-symbols-outlined text-xl">settings</span>
-            <span className="font-label-caps text-label-caps">{t("settings")}</span>
-          </a>
-        </div>
-        <div className="px-4 mt-auto space-y-2">
-          <button
-            type="button"
-            className="w-full bg-primary-container text-on-primary-fixed font-bold py-3 px-4 rounded-lg flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(0,209,255,0.3)] hover:scale-[1.02] transition-transform"
-          >
-            <span className="material-symbols-outlined">add</span>
-            <span className="font-label-caps text-label-caps">{t("addDevice")}</span>
-          </button>
-          <div className="pt-6 border-t border-border-glass">
-            <a className="flex items-center space-x-3 px-4 py-2 text-on-surface-variant hover:text-on-surface transition-colors" href="#">
-              <span className="material-symbols-outlined text-lg">help</span>
-              <span className="font-label-caps text-label-caps">{t("help")}</span>
-            </a>
-            <a className="flex items-center space-x-3 px-4 py-2 text-on-surface-variant hover:text-on-surface transition-colors" href="#">
-              <span className="material-symbols-outlined text-lg">logout</span>
-              <span className="font-label-caps text-label-caps">{t("logout")}</span>
-            </a>
-          </div>
-        </div>
-      </nav>
-
-      <main className="ml-64 min-h-screen p-margin-desktop bg-bg-obsidian">
+    <AppShell>
         <header className="flex justify-between items-end mb-8">
           <div>
             <h2 className="font-headline-md text-headline-md text-on-surface">
@@ -169,9 +122,8 @@ export function HistoricalLedger() {
             </button>
             <button
               type="button"
-              disabled
-              title="PDF export coming soon"
-              className="px-4 py-2 font-label-caps text-label-caps rounded-md text-on-surface/40 cursor-not-allowed flex items-center space-x-2"
+              onClick={handleExportPdf}
+              className="px-4 py-2 font-label-caps text-label-caps rounded-md text-on-surface hover:bg-surface-variant transition-colors flex items-center space-x-2"
             >
               <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
               <span>PDF</span>
@@ -260,14 +212,56 @@ export function HistoricalLedger() {
               </div>
               <button
                 type="button"
-                className="p-1.5 rounded hover:bg-surface-variant transition-colors"
+                onClick={() => setFiltersOpen((v) => !v)}
+                className={
+                  filtersOpen || statusFilter !== "all"
+                    ? "p-1.5 rounded bg-primary/15 text-primary"
+                    : "p-1.5 rounded hover:bg-surface-variant transition-colors text-on-surface-variant"
+                }
+                aria-label="Filter status"
               >
-                <span className="material-symbols-outlined text-on-surface-variant">
-                  filter_list
-                </span>
+                <span className="material-symbols-outlined">filter_list</span>
               </button>
+              <span
+                className={
+                  isLive
+                    ? "font-label-caps text-[10px] text-success-glow"
+                    : "font-label-caps text-[10px] text-on-surface-variant"
+                }
+              >
+                {isLive ? "LIVE" : "IDLE"}
+              </span>
             </div>
           </div>
+
+          {filtersOpen ? (
+            <div className="px-6 py-3 border-b border-border-glass flex flex-wrap gap-2">
+              {(
+                [
+                  ["all", "ALL"],
+                  ["Baik", "BAIK"],
+                  ["Cukup Baik", "CUKUP"],
+                  ["Tidak Baik", "ALERT"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(value);
+                    setPage(0);
+                  }}
+                  className={
+                    statusFilter === value
+                      ? "px-3 py-1 rounded-full bg-primary-container text-on-primary-container font-label-caps text-[10px]"
+                      : "px-3 py-1 rounded-full border border-border-glass font-label-caps text-[10px] text-on-surface-variant"
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -337,7 +331,7 @@ export function HistoricalLedger() {
               >
                 <span className="material-symbols-outlined">chevron_left</span>
               </button>
-              {Array.from({ length: Math.min(pageCount, 3) }, (_, i) => (
+              {pageWindow.map((i) => (
                 <button
                   key={i}
                   type="button"
@@ -363,46 +357,29 @@ export function HistoricalLedger() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-widget-gap">
-          <div className="lg:col-span-2 glass-panel p-6 rounded-xl h-64 relative overflow-hidden">
-            <div className="relative z-10">
+        <div className="glass-panel p-6 rounded-xl">
+          <div className="flex items-center justify-between mb-4">
+            <div>
               <h4 className="font-label-caps text-label-caps text-on-surface-variant mb-1">
-                {t("liveMap")}
+                {t("activeNodes")}
               </h4>
               <p className="font-body-base text-body-base text-on-surface">
-                {t("regionalSector")}
+                {stats.nodeCount} node · {filtered.length} rows in view
               </p>
             </div>
-            <div className="absolute bottom-6 right-6 z-10 flex space-x-2">
-              <div className="flex items-center space-x-2 bg-obsidian/80 backdrop-blur border border-border-glass px-3 py-1 rounded-full">
-                <div className="w-2 h-2 rounded-full bg-success-glow animate-pulse" />
-                <span className="font-label-caps text-[10px]">
-                  {t("realtimeTracking")}
-                </span>
-              </div>
-            </div>
+            <Link
+              href="/devices"
+              className="px-4 py-2 rounded-lg border border-border-glass font-label-caps text-xs hover:border-primary"
+            >
+              MANAGE FLEET
+            </Link>
           </div>
-          <div className="glass-panel p-0 rounded-xl overflow-hidden relative min-h-[16rem]">
-            <div
-              className="w-full h-full bg-cover bg-center absolute inset-0"
-              style={{
-                backgroundImage:
-                  "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDbRMShkbBmQMKEwC2f1qKKpSO-NG9J6MMz5Uzk_pSHVoFQfOc4aX4eT_DonxyzTH8SIQd_lJsb0VnP1zPtcm_nFiwt1gLwp9enfi3VIw2PS8H-Dzi7_6sU8D2_llXnF9MaVKQRgA8gKl2n3wVkgKBODJ5A2Hhe_CL8RejhxAu1rKgau7CkjqSqhSIRiLCiUlUpo0HC10PoZmgAElAJ4XSQhTDJBdyOIlaF_V6oMw2J2-G7-PujFMxT7g')",
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-bg-obsidian via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 p-6">
-              <h4 className="font-label-caps text-label-caps text-primary">
-                {t("spatialNodeView")}
-              </h4>
-              <p className="font-label-caps text-[10px] text-on-surface-variant">
-                {t("satelliteOverlay")}
-              </p>
-            </div>
-          </div>
+          <p className="text-sm text-on-surface-variant">
+            Spatial map placeholder retired — gunakan Devices untuk status node
+            realtime dan Simulation untuk inject sample ke ledger live.
+          </p>
         </div>
-      </main>
-    </>
+    </AppShell>
   );
 }
 

@@ -161,5 +161,47 @@ export async function applyHardwareAction(
     .single();
 
   if (error) return { ok: false as const, error: error.message };
+
+  // Mirror sample readings into live telemetry so dashboard/alerts update.
+  if (body.action === "set_readings" || body.action === "refresh_lcd") {
+    await mirrorSimulationToTelemetry(supabase, data as SimulationHardware);
+  }
+
   return { ok: true as const, state: data as SimulationHardware };
+}
+
+async function mirrorSimulationToTelemetry(
+  supabase: SupabaseClient<Database>,
+  state: SimulationHardware,
+) {
+  const apiKey = state.device_id;
+
+  const { data: existing } = await supabase
+    .from("devices")
+    .select("api_key, revoked_at")
+    .eq("api_key", apiKey)
+    .maybeSingle();
+
+  if (!existing) {
+    await supabase.from("devices").insert({
+      name: `Sim ${apiKey}`,
+      api_key: apiKey,
+      status: "online",
+      last_ping: new Date().toISOString(),
+      health: "simulated",
+    });
+  } else if (existing.revoked_at) {
+    return;
+  }
+
+  await supabase.rpc("ingest_telemetry", {
+    p_api_key: apiKey,
+    p_ph: state.ph,
+    p_tds: state.tds,
+    p_turbidity: state.turbidity,
+    p_temp: state.temp,
+    p_crisp_score: state.crisp_score,
+    p_water_status: state.water_status,
+    p_action_message: state.action_message,
+  });
 }

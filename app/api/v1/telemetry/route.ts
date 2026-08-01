@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     const { data: device, error: authError } = await supabase
       .from("devices")
-      .select("api_key")
+      .select("api_key, revoked_at")
       .eq("api_key", payload.api_key)
       .maybeSingle();
 
@@ -47,6 +47,10 @@ export async function POST(request: Request) {
 
     if (!device) {
       return jsonError("Unauthorized", 401);
+    }
+
+    if (device.revoked_at) {
+      return jsonError("Device key revoked", 403);
     }
 
     const fuzzy = resolveFuzzyFields(payload);
@@ -68,6 +72,22 @@ export async function POST(request: Request) {
     if (ingestError) {
       console.error("[telemetry] ingest failed:", ingestError.message);
       return jsonError("Failed to persist telemetry", 500);
+    }
+
+    if (
+      fuzzy.water_status === "Tidak Baik" ||
+      fuzzy.water_status === "Cukup Baik"
+    ) {
+      const severity =
+        fuzzy.water_status === "Tidak Baik" ? "critical" : "warning";
+      void supabase.from("alert_events").insert({
+        device_id: payload.api_key,
+        severity,
+        water_status: fuzzy.water_status,
+        message:
+          fuzzy.action_message ??
+          `Water quality ${fuzzy.water_status} (score ${fuzzy.crisp_score})`,
+      });
     }
 
     return jsonOk({

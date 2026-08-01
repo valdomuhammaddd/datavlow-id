@@ -1,5 +1,6 @@
-import { PrecisionTelemetryDashboard } from "@/components/dashboard/precision-telemetry-dashboard";
+import { redirect } from "next/navigation";
 
-export default function DashboardPage() {
-  return <PrecisionTelemetryDashboard />;
+/** Keep a single dashboard entrypoint to reduce navigation confusion. */
+export default function HomePage() {
+  redirect("/dashboard");
 }

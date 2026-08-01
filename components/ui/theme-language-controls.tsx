@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { memo } from "react";
 
 import { useGlobalUI, type LocaleCode } from "@/context/GlobalUIContext";
@@ -11,7 +12,7 @@ export const ThemeLanguageControls = memo(function ThemeLanguageControls() {
   const { theme, locale, setLocale, toggleTheme } = useGlobalUI();
 
   return (
-    <div className="flex items-center gap-6">
+    <div className="flex items-center gap-4">
       <div className="flex bg-surface-container-high rounded-full p-1 border border-border-glass">
         {(["ID", "EN"] as LocaleCode[]).map((code) => (
           <button
@@ -28,25 +29,22 @@ export const ThemeLanguageControls = memo(function ThemeLanguageControls() {
           </button>
         ))}
       </div>
-      <div className="flex gap-4">
-        <button
-          type="button"
-          onClick={() => setLocale(locale === "ID" ? "EN" : "ID")}
-          className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all"
-          aria-label="Toggle language"
-        >
-          translate
-        </button>
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all"
-          aria-label="Toggle theme"
-        >
-          {theme === "dark" ? "light_mode" : "dark_mode"}
-        </button>
-        <div className="h-8 w-8 rounded-full overflow-hidden border border-border-glass bg-surface-container" />
-      </div>
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all"
+        aria-label="Toggle theme"
+      >
+        {theme === "dark" ? "light_mode" : "dark_mode"}
+      </button>
+      <Link
+        href="/settings"
+        className="h-8 w-8 rounded-full border border-border-glass bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary/40 transition-colors"
+        aria-label="Open settings"
+        title="Settings"
+      >
+        <span className="material-symbols-outlined text-[18px]">person</span>
+      </Link>
     </div>
   );
 });
