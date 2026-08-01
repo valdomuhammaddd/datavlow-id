@@ -1,0 +1,124 @@
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --obsidian: #020204;
+  --ink: #e1e2eb;
+}
+
+html.light {
+  --glass-bg: rgba(15, 23, 42, 0.04);
+  --glass-border: rgba(15, 23, 42, 0.1);
+  --obsidian: #f4f7fb;
+  --ink: #10131a;
+}
+
+html,
+body {
+  background-color: var(--obsidian);
+  color: var(--ink);
+  overflow-x: hidden;
+  font-family: "Inter", sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.bg-obsidian {
+  background-color: var(--obsidian);
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 209, 255, 0.15);
+}
+
+.neon-border {
+  position: relative;
+}
+
+.neon-border::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(76, 214, 255, 0.3),
+    transparent,
+    rgba(76, 214, 255, 0.05)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.kinetic-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.chart-flow-mask {
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s infinite ease-in-out;
+}
+
+.status-glow-baik {
+  box-shadow: 0 0 12px rgba(0, 255, 194, 0.2);
+  border: 1px solid rgba(0, 255, 194, 0.4);
+}
+
+.status-glow-cukup {
+  box-shadow: 0 0 12px rgba(254, 177, 39, 0.2);
+  border: 1px solid rgba(254, 177, 39, 0.4);
+}
+
+.status-glow-tidak {
+  box-shadow: 0 0 12px rgba(255, 61, 0, 0.2);
+  border: 1px solid rgba(255, 61, 0, 0.4);
+}
+
+.data-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 2px solid #a4e6ff;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--obsidian);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #32353c;
+  border-radius: 10px;
+}
