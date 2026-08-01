@@ -1,33 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --obsidian: #020204;
+  --obsidian: #0b0e14;
   --ink: #e1e2eb;
 }
 
 html.light {
   --glass-bg: rgba(15, 23, 42, 0.04);
-  --glass-border: rgba(15, 23, 42, 0.1);
-  --obsidian: #f4f7fb;
+  --glass-border: rgba(15, 23, 42, 0.12);
+  --obsidian: #eef2f7;
   --ink: #10131a;
 }
 
-html,
-body {
-  background-color: var(--obsidian);
-  color: var(--ink);
-  overflow-x: hidden;
-  font-family: "Inter", sans-serif;
-  transition: background-color 0.2s ease, color 0.2s ease;
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  html,
+  body {
+    background-color: var(--obsidian);
+    color: var(--ink);
+    overflow-x: hidden;
+    min-height: 100%;
+  }
+
+  body {
+    @apply font-body-base text-body-base text-on-surface bg-bg-obsidian;
+  }
 }
 
-.bg-obsidian {
-  background-color: var(--obsidian);
-}
-
+/* DESAINUI.MD — specialized effects */
 .glass-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
 }
 
@@ -70,7 +81,13 @@ body {
 }
 
 .chart-flow-mask {
-  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
 }
 
 @keyframes pulse-slow {
@@ -109,6 +126,27 @@ body {
   border-left: 2px solid #a4e6ff;
 }
 
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined", sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.25rem;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.bg-obsidian {
+  background-color: var(--obsidian);
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -121,4 +159,15 @@ body {
 ::-webkit-scrollbar-thumb {
   background: #32353c;
   border-radius: 10px;
+}
+
+/* Light-mode glass readability */
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+html.light body {
+  @apply text-on-surface;
+  color: #10131a;
 }
