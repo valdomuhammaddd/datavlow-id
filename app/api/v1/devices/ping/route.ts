@@ -43,7 +43,6 @@ export async function POST(request: Request) {
       return jsonError(result.error, result.status);
     }
 
-    // Persist health metrics for Device Control cards
     await supabase
       .from("devices")
       .update({

@@ -12,17 +12,17 @@ export type WaterStatus = "Baik" | "Cukup Baik" | "Tidak Baik";
 
 export type WorkflowStatus = "draft" | "live" | "archived";
 
-export interface Device {
+export type Device = {
   id: string;
   api_key: string;
   name: string;
   status: DeviceStatus;
   last_ping: string | null;
-  latency_ms?: number | null;
-  health?: string | null;
-}
+  latency_ms: number | null;
+  health: string | null;
+};
 
-export interface DeviceInsert {
+export type DeviceInsert = {
   id?: string;
   api_key: string;
   name: string;
@@ -30,9 +30,9 @@ export interface DeviceInsert {
   last_ping?: string | null;
   latency_ms?: number | null;
   health?: string | null;
-}
+};
 
-export interface DeviceUpdate {
+export type DeviceUpdate = {
   id?: string;
   api_key?: string;
   name?: string;
@@ -40,9 +40,9 @@ export interface DeviceUpdate {
   last_ping?: string | null;
   latency_ms?: number | null;
   health?: string | null;
-}
+};
 
-export interface TelemetryLog {
+export type TelemetryLog = {
   id: number;
   device_id: string;
   ph: number | null;
@@ -53,9 +53,9 @@ export interface TelemetryLog {
   water_status: WaterStatus | null;
   action_message: string | null;
   created_at: string;
-}
+};
 
-export interface TelemetryLogInsert {
+export type TelemetryLogInsert = {
   id?: number;
   device_id: string;
   ph?: number | null;
@@ -66,9 +66,9 @@ export interface TelemetryLogInsert {
   water_status?: WaterStatus | null;
   action_message?: string | null;
   created_at?: string;
-}
+};
 
-export interface TelemetryLogUpdate {
+export type TelemetryLogUpdate = {
   id?: number;
   device_id?: string;
   ph?: number | null;
@@ -79,9 +79,9 @@ export interface TelemetryLogUpdate {
   water_status?: WaterStatus | null;
   action_message?: string | null;
   created_at?: string;
-}
+};
 
-export interface WorkflowRow {
+export type WorkflowRow = {
   id: string;
   name: string;
   status: WorkflowStatus;
@@ -89,9 +89,9 @@ export interface WorkflowRow {
   version: number;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface WorkflowInsert {
+export type WorkflowInsert = {
   id?: string;
   name: string;
   status?: WorkflowStatus;
@@ -99,9 +99,9 @@ export interface WorkflowInsert {
   version?: number;
   created_at?: string;
   updated_at?: string;
-}
+};
 
-export interface WorkflowUpdate {
+export type WorkflowUpdate = {
   id?: string;
   name?: string;
   status?: WorkflowStatus;
@@ -109,9 +109,9 @@ export interface WorkflowUpdate {
   version?: number;
   created_at?: string;
   updated_at?: string;
-}
+};
 
-export interface SimulationHardware {
+export type SimulationHardware = {
   device_id: string;
   ph: number;
   tds: number;
@@ -128,9 +128,9 @@ export interface SimulationHardware {
   rssi: number;
   voltage: number;
   updated_at: string;
-}
+};
 
-export interface SimulationHardwareInsert {
+export type SimulationHardwareInsert = {
   device_id: string;
   ph?: number;
   tds?: number;
@@ -147,9 +147,9 @@ export interface SimulationHardwareInsert {
   rssi?: number;
   voltage?: number;
   updated_at?: string;
-}
+};
 
-export interface SimulationHardwareUpdate {
+export type SimulationHardwareUpdate = {
   device_id?: string;
   ph?: number;
   tds?: number;
@@ -166,9 +166,9 @@ export interface SimulationHardwareUpdate {
   rssi?: number;
   voltage?: number;
   updated_at?: string;
-}
+};
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       devices: {
@@ -204,10 +204,12 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      [_ in never]: never;
+    };
     Functions: {
       purge_old_telemetry_logs: {
-        Args: Record<string, never>;
+        Args: Record<PropertyKey, never>;
         Returns: number;
       };
       ingest_telemetry: {
@@ -226,13 +228,13 @@ export interface Database {
       };
     };
     Enums: {
-      device_status: DeviceStatus;
-      water_status: WaterStatus;
-      workflow_status: WorkflowStatus;
+      [_ in never]: never;
     };
-    CompositeTypes: Record<string, never>;
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-}
+};
 
 export type Tables<T extends keyof Database["public"]["Tables"]> =
   Database["public"]["Tables"][T]["Row"];
