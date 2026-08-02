@@ -426,4 +426,8 @@ html.light body {
   background-clip: text;
   color: transparent;
   animation: land-shimmer 5s linear infinite;
+  /* Prevent clipped multi-line paint from collapsing visual line boxes */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding-block: 0.06em;
 }

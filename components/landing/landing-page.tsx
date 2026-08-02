@@ -374,7 +374,7 @@ export function LandingPage() {
             <p className="font-label-caps text-label-caps text-primary-container tracking-[0.32em] mb-5 land-fade-up land-delay-1">
               PUSAT PANTAU KUALITAS AIR
             </p>
-            <h1 className="font-display text-[clamp(3rem,9vw,5.75rem)] font-extrabold leading-[0.9] tracking-[-0.04em] mb-6 land-fade-up land-delay-2 land-shimmer-text">
+            <h1 className="font-display text-[clamp(3rem,9vw,5.75rem)] font-extrabold leading-[1.05] tracking-[-0.03em] mb-6 land-fade-up land-delay-2 land-shimmer-text">
               DATAVLOW.ID
             </h1>
             <p className="max-w-xl text-lg md:text-xl font-body-base text-on-surface/90 leading-relaxed mb-8 land-fade-up land-delay-3">
@@ -426,7 +426,7 @@ export function LandingPage() {
           <p className="font-label-caps text-[11px] text-primary mb-3">
             JARINGAN MASA DEPAN
           </p>
-          <h2 className="font-headline-md text-[clamp(1.6rem,3.5vw,2.4rem)] max-w-3xl mb-4 tracking-tight">
+          <h2 className="font-display text-[clamp(1.6rem,3.5vw,2.4rem)] leading-snug font-bold max-w-3xl mb-4 tracking-tight">
             Dibangun untuk memantau 125+ titik — dan terus bertambah
           </h2>
           <p className="max-w-2xl text-on-surface-variant leading-relaxed mb-12">
@@ -444,7 +444,7 @@ export function LandingPage() {
             ].map((stat) => (
               <div key={stat.label} className="land-glass rounded-xl p-5">
                 <p
-                  className={`font-display-lg text-3xl md:text-4xl tabular-nums ${stat.tone}`}
+                  className={`font-display text-3xl md:text-4xl leading-none font-bold tabular-nums ${stat.tone}`}
                 >
                   {stat.value}
                 </p>
@@ -483,7 +483,7 @@ export function LandingPage() {
           <p className="font-label-caps text-[11px] text-on-surface-variant mb-3">
             MENGAPA INI PENTING
           </p>
-          <h2 className="font-headline-md text-[clamp(1.5rem,3vw,2.2rem)] max-w-3xl mb-4 tracking-tight">
+          <h2 className="font-display text-[clamp(1.5rem,3vw,2.2rem)] leading-snug font-bold max-w-3xl mb-4 tracking-tight">
             Air yang dipantau hari ini melindungi masyarakat besok
           </h2>
           <p className="max-w-3xl text-on-surface-variant leading-relaxed">
@@ -499,7 +499,7 @@ export function LandingPage() {
         <p className="font-label-caps text-[11px] text-primary mb-3">
           KEMAMPUAN UNGGULAN
         </p>
-        <h2 className="font-headline-md text-[clamp(1.5rem,3vw,2.2rem)] max-w-2xl mb-10 tracking-tight">
+        <h2 className="font-display text-[clamp(1.5rem,3vw,2.2rem)] leading-snug font-bold max-w-2xl mb-10 tracking-tight">
           Bukan sekadar angka — ini ruang kendali yang hidup
         </h2>
         <ul className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl">
@@ -511,7 +511,9 @@ export function LandingPage() {
               <span className="material-symbols-outlined text-primary text-2xl mb-3 block group-hover:scale-110 transition-transform">
                 {item.icon}
               </span>
-              <h3 className="font-headline-md text-lg mb-2">{item.title}</h3>
+              <h3 className="font-display text-lg leading-snug font-semibold mb-2">
+                {item.title}
+              </h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 {item.body}
               </p>
@@ -525,13 +527,13 @@ export function LandingPage() {
           <p className="font-label-caps text-[11px] text-primary mb-3">
             VISI SKALA BESAR
           </p>
-          <h2 className="font-headline-md text-[clamp(1.5rem,3vw,2.2rem)] mb-10 tracking-tight">
+          <h2 className="font-display text-[clamp(1.5rem,3vw,2.2rem)] leading-snug font-bold mb-10 tracking-tight">
             Dirancang untuk tumbuh bersama wilayah Anda
           </h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {FUTURE.map((item) => (
               <div key={item.title}>
-                <p className="font-display-lg text-3xl land-shimmer-text mb-2">
+                <p className="font-display text-3xl leading-none font-bold land-shimmer-text mb-2">
                   {item.label}
                 </p>
                 <h3 className="font-label-caps text-label-caps text-on-surface mb-2">
@@ -550,7 +552,7 @@ export function LandingPage() {
         <p className="font-label-caps text-[11px] text-primary mb-3">
           CARA MEMULAI
         </p>
-        <h2 className="font-headline-md text-[clamp(1.5rem,3vw,2.2rem)] mb-8 tracking-tight">
+        <h2 className="font-display text-[clamp(1.5rem,3vw,2.2rem)] leading-snug font-bold mb-8 tracking-tight">
           Empat langkah, langsung terasa manfaatnya
         </h2>
         <ol className="grid md:grid-cols-2 gap-4 max-w-4xl">
@@ -560,7 +562,9 @@ export function LandingPage() {
                 {step.n}
               </span>
               <div>
-                <h3 className="font-headline-md text-lg mb-1">{step.title}</h3>
+                <h3 className="font-display text-lg leading-snug font-semibold mb-1">
+                  {step.title}
+                </h3>
                 <p className="text-on-surface-variant text-sm leading-relaxed">
                   {step.body}
                 </p>
@@ -576,7 +580,7 @@ export function LandingPage() {
           <NodeConstellation />
         </div>
         <div className="relative land-glass rounded-2xl p-8 md:p-12 max-w-3xl land-fade-up">
-          <h2 className="font-headline-md text-[clamp(1.75rem,4vw,2.6rem)] tracking-tight mb-4">
+          <h2 className="font-display text-[clamp(1.75rem,4vw,2.6rem)] leading-[1.25] font-bold tracking-tight mb-4">
             Siap menjaga air di 125 titik — mulai dari yang pertama
           </h2>
           <p className="text-on-surface-variant mb-8 leading-relaxed max-w-xl">
