@@ -413,21 +413,7 @@ html.light body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Optional accent — keep solid brand color for readability on IoT UI */
 .land-shimmer-text {
-  background: linear-gradient(
-    90deg,
-    #a4e6ff 0%,
-    #00d1ff 35%,
-    #00ffc2 55%,
-    #a4e6ff 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: land-shimmer 5s linear infinite;
-  /* Prevent clipped multi-line paint from collapsing visual line boxes */
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  padding-block: 0.06em;
+  color: #a4e6ff;
 }

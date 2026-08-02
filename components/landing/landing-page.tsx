@@ -328,7 +328,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-bg-obsidian text-on-surface overflow-x-hidden">
       <header className="fixed top-0 inset-x-0 z-40 flex items-center justify-between px-margin-desktop h-16 land-glass-soft">
-        <span className="font-headline-md tracking-tighter font-bold land-shimmer-text">
+        <span className="font-display text-lg font-semibold tracking-tight text-primary">
           DATAVLOW.ID
         </span>
         <nav className="flex items-center gap-3">
@@ -371,22 +371,24 @@ export function LandingPage() {
           }`}
         >
           <div className="land-glass rounded-2xl p-8 md:p-12 max-w-3xl land-glow-breathe">
-            <p className="font-label-caps text-label-caps text-primary-container tracking-[0.32em] mb-5 land-fade-up land-delay-1">
-              PUSAT PANTAU KUALITAS AIR
+            <p className="font-label-caps text-[11px] text-primary-container tracking-[0.14em] mb-4 land-fade-up land-delay-1">
+              IOT WATER MONITORING · LIVE DASHBOARD
             </p>
-            <h1 className="font-display text-[clamp(3rem,9vw,5.75rem)] font-extrabold leading-[1.05] tracking-[-0.03em] mb-6 land-fade-up land-delay-2 land-shimmer-text">
-              DATAVLOW.ID
+            <h1 className="font-display text-[clamp(2.5rem,7vw,4.5rem)] font-bold leading-[1.12] tracking-tight text-on-surface mb-5 land-fade-up land-delay-2">
+              Pantau air seperti
+              <span className="block text-primary-container">dashboard IoT</span>
             </h1>
-            <p className="max-w-xl text-lg md:text-xl font-body-base text-on-surface/90 leading-relaxed mb-8 land-fade-up land-delay-3">
-              Satu layar untuk menjaga ratusan titik air tetap aman — dari desa
-              hingga instalasi besar, hidup dan bergerak setiap detik.
+            <p className="max-w-xl text-base md:text-lg font-body-base text-on-surface-variant leading-relaxed mb-8 land-fade-up land-delay-3">
+              DATAVLOW.ID menampilkan data sensor realtime — pH, kejernihan,
+              suhu, dan status kualitas — dalam satu pusat kendali yang mudah
+              dibaca operator, mirip cara kerja platform IoT modern.
             </p>
             <div className="flex flex-wrap gap-3 land-fade-up land-delay-4">
               <Link
                 href="/setup"
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-primary-container text-on-primary-container font-label-caps font-bold hover:brightness-110 transition land-glow-breathe"
               >
-                BUKA PUSAT KENDALI
+                BUKA DASHBOARD LIVE
                 <span className="material-symbols-outlined text-[18px]">
                   arrow_forward
                 </span>
@@ -533,7 +535,7 @@ export function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {FUTURE.map((item) => (
               <div key={item.title}>
-                <p className="font-display text-3xl leading-none font-bold land-shimmer-text mb-2">
+                <p className="font-display text-3xl leading-none font-bold text-primary-container mb-2">
                   {item.label}
                 </p>
                 <h3 className="font-label-caps text-label-caps text-on-surface mb-2">
@@ -580,7 +582,7 @@ export function LandingPage() {
           <NodeConstellation />
         </div>
         <div className="relative land-glass rounded-2xl p-8 md:p-12 max-w-3xl land-fade-up">
-          <h2 className="font-display text-[clamp(1.75rem,4vw,2.6rem)] leading-[1.25] font-bold tracking-tight mb-4">
+          <h2 className="font-display text-[clamp(1.6rem,3.5vw,2.35rem)] leading-[1.3] font-bold tracking-tight text-on-surface mb-4">
             Siap menjaga air di 125 titik — mulai dari yang pertama
           </h2>
           <p className="text-on-surface-variant mb-8 leading-relaxed max-w-xl">
@@ -605,7 +607,7 @@ export function LandingPage() {
       </section>
 
       <footer className="px-margin-desktop py-10 border-t border-white/10 land-glass-soft flex flex-col sm:flex-row justify-between gap-4 text-xs text-on-surface-variant">
-        <span className="font-headline-md tracking-tight land-shimmer-text">
+        <span className="font-display text-base font-semibold tracking-tight text-primary">
           DATAVLOW.ID
         </span>
         <span className="font-label-caps">

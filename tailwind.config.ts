@@ -82,38 +82,41 @@ const config: Config = {
         unit: "4px",
       },
       fontFamily: {
-        "headline-md": ["var(--font-display)", "Syne", "sans-serif"],
-        "display-lg": ["var(--font-display)", "Syne", "sans-serif"],
+        // Space Grotesk = product UI / IoT dashboard titles (Blynk-like clarity)
+        "headline-md": ["var(--font-display)", "Space Grotesk", "sans-serif"],
+        "display-lg": ["var(--font-display)", "Space Grotesk", "sans-serif"],
+        display: ["var(--font-display)", "Space Grotesk", "sans-serif"],
+        // DM Sans = readable body for operator workflows
+        "body-base": ["var(--font-body)", "DM Sans", "sans-serif"],
+        sans: ["var(--font-body)", "DM Sans", "sans-serif"],
+        // JetBrains Mono = live sensor values & caps labels
         "label-caps": ["var(--font-mono)", "JetBrains Mono", "monospace"],
         "data-mono": ["var(--font-mono)", "JetBrains Mono", "monospace"],
-        "body-base": ["var(--font-body)", "Plus Jakarta Sans", "sans-serif"],
-        sans: ["var(--font-body)", "Plus Jakarta Sans", "sans-serif"],
         mono: ["var(--font-mono)", "JetBrains Mono", "monospace"],
-        display: ["var(--font-display)", "Syne", "sans-serif"],
       },
       fontSize: {
         "headline-md": [
           "24px",
-          { lineHeight: "32px", fontWeight: "600" },
+          { lineHeight: "1.25", fontWeight: "600" },
         ],
         "display-lg": [
           "48px",
           {
-            lineHeight: "56px",
-            letterSpacing: "-0.03em",
-            fontWeight: "800",
+            lineHeight: "1.15",
+            letterSpacing: "-0.02em",
+            fontWeight: "700",
           },
         ],
         "label-caps": [
-          "12px",
+          "11px",
           {
-            lineHeight: "16px",
-            letterSpacing: "0.12em",
+            lineHeight: "1.35",
+            letterSpacing: "0.08em",
             fontWeight: "500",
           },
         ],
-        "data-mono": ["14px", { lineHeight: "20px", fontWeight: "400" }],
-        "body-base": ["16px", { lineHeight: "26px", fontWeight: "400" }],
+        "data-mono": ["14px", { lineHeight: "1.4", fontWeight: "500" }],
+        "body-base": ["16px", { lineHeight: "1.6", fontWeight: "400" }],
       },
       backdropBlur: {
         xl: "24px",
