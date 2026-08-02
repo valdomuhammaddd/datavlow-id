@@ -82,13 +82,14 @@ const config: Config = {
         unit: "4px",
       },
       fontFamily: {
-        "headline-md": ["var(--font-inter)", "Inter", "sans-serif"],
-        "display-lg": ["var(--font-inter)", "Inter", "sans-serif"],
-        "label-caps": ["var(--font-jetbrains)", "JetBrains Mono", "monospace"],
-        "data-mono": ["var(--font-jetbrains)", "JetBrains Mono", "monospace"],
-        "body-base": ["var(--font-inter)", "Inter", "sans-serif"],
-        sans: ["var(--font-inter)", "Inter", "sans-serif"],
-        mono: ["var(--font-jetbrains)", "JetBrains Mono", "monospace"],
+        "headline-md": ["var(--font-display)", "Syne", "sans-serif"],
+        "display-lg": ["var(--font-display)", "Syne", "sans-serif"],
+        "label-caps": ["var(--font-mono)", "JetBrains Mono", "monospace"],
+        "data-mono": ["var(--font-mono)", "JetBrains Mono", "monospace"],
+        "body-base": ["var(--font-body)", "Plus Jakarta Sans", "sans-serif"],
+        sans: ["var(--font-body)", "Plus Jakarta Sans", "sans-serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "monospace"],
+        display: ["var(--font-display)", "Syne", "sans-serif"],
       },
       fontSize: {
         "headline-md": [
@@ -99,20 +100,20 @@ const config: Config = {
           "48px",
           {
             lineHeight: "56px",
-            letterSpacing: "-0.02em",
-            fontWeight: "700",
+            letterSpacing: "-0.03em",
+            fontWeight: "800",
           },
         ],
         "label-caps": [
           "12px",
           {
             lineHeight: "16px",
-            letterSpacing: "0.1em",
+            letterSpacing: "0.12em",
             fontWeight: "500",
           },
         ],
         "data-mono": ["14px", { lineHeight: "20px", fontWeight: "400" }],
-        "body-base": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+        "body-base": ["16px", { lineHeight: "26px", fontWeight: "400" }],
       },
       backdropBlur: {
         xl: "24px",

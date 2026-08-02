@@ -145,11 +145,11 @@ function useInView<T extends HTMLElement>() {
   return { ref, inView };
 }
 
-/** Abstract ocean aurora — no photography of people. */
+/** Pure CSS aurora ocean — intentionally no <img> / photos. */
 function AuroraOceanBackground() {
   const particles = useMemo(
     () =>
-      Array.from({ length: 28 }, (_, i) => ({
+      Array.from({ length: 36 }, (_, i) => ({
         id: i,
         left: `${(i * 37) % 100}%`,
         delay: `${(i % 12) * 0.7}s`,
@@ -160,88 +160,89 @@ function AuroraOceanBackground() {
   );
 
   return (
-    <div className="absolute inset-0 overflow-hidden" aria-hidden>
-      <div className="absolute inset-0 bg-[#05080f]" />
+    <div
+      className="absolute inset-0 overflow-hidden isolate"
+      aria-hidden
+      style={{ backgroundColor: "#03060c" }}
+    >
+      {/* Opaque base — blocks any cached photo behind */}
+      <div className="absolute inset-0 bg-[#03060c]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#041018] via-[#061820] to-[#02050a]" />
 
-      {/* Deep water gradient base */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(0,120,160,0.35),transparent_55%),radial-gradient(ellipse_at_80%_20%,rgba(0,209,255,0.18),transparent_50%),radial-gradient(ellipse_at_50%_100%,rgba(0,80,120,0.4),transparent_55%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_10%,rgba(0,180,220,0.45),transparent_50%),radial-gradient(ellipse_at_85%_15%,rgba(0,255,200,0.18),transparent_45%),radial-gradient(ellipse_at_50%_90%,rgba(0,90,140,0.55),transparent_50%)]" />
 
-      {/* Moving aurora blobs */}
       <div
-        className="land-aurora-blob absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-[#006f8a]/45"
-        style={{ animationDelay: "0s" }}
+        className="land-aurora-blob absolute -top-[25%] -left-[15%] w-[80vw] h-[80vw] max-w-[900px] max-h-[900px] rounded-full bg-[#0090b0]"
+        style={{ opacity: 0.35 }}
       />
       <div
-        className="land-aurora-blob absolute top-[10%] right-[-15%] w-[55vw] h-[55vw] rounded-full bg-[#00d1ff]/25"
-        style={{ animationDelay: "-6s", animationDuration: "22s" }}
+        className="land-aurora-blob absolute top-[5%] right-[-20%] w-[65vw] h-[65vw] max-w-[720px] max-h-[720px] rounded-full bg-[#00d1ff]"
+        style={{ opacity: 0.22, animationDelay: "-6s", animationDuration: "22s" }}
       />
       <div
-        className="land-aurora-blob absolute bottom-[-25%] left-[20%] w-[65vw] h-[50vw] rounded-full bg-[#00ffc2]/12"
-        style={{ animationDelay: "-11s", animationDuration: "26s" }}
-      />
-
-      {/* Soft orbs */}
-      <div
-        className="land-orb absolute top-[30%] left-[15%] w-40 h-40 rounded-full bg-primary-container/40"
-        style={{ animationDelay: "0s" }}
-      />
-      <div
-        className="land-orb absolute top-[55%] right-[20%] w-56 h-56 rounded-full bg-success-glow/20"
-        style={{ animationDelay: "-3s", animationDuration: "11s" }}
+        className="land-aurora-blob absolute bottom-[-30%] left-[15%] w-[75vw] h-[55vw] rounded-full bg-[#00ffc2]"
+        style={{ opacity: 0.12, animationDelay: "-11s", animationDuration: "26s" }}
       />
 
-      {/* Wave SVG layers */}
+      <div
+        className="land-orb absolute top-[28%] left-[12%] w-48 h-48 rounded-full bg-[#00d1ff]"
+        style={{ opacity: 0.35 }}
+      />
+      <div
+        className="land-orb absolute top-[52%] right-[18%] w-64 h-64 rounded-full bg-[#00ffc2]"
+        style={{ opacity: 0.18, animationDelay: "-3s", animationDuration: "11s" }}
+      />
+
       <svg
-        className="land-wave-layer absolute bottom-0 left-[-10%] w-[120%] h-[45%] opacity-40"
+        className="land-wave-layer absolute bottom-0 left-[-10%] w-[120%] h-[48%]"
         viewBox="0 0 1440 320"
         preserveAspectRatio="none"
+        style={{ opacity: 0.55 }}
       >
         <path
-          fill="rgba(0, 209, 255, 0.12)"
+          fill="rgba(0, 209, 255, 0.16)"
           d="M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,170.7C960,160,1056,192,1152,197.3C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
         />
       </svg>
       <svg
-        className="land-wave-layer absolute bottom-0 left-[-5%] w-[120%] h-[38%] opacity-50"
-        style={{ animationDelay: "-4s", animationDuration: "18s" }}
+        className="land-wave-layer absolute bottom-0 left-[-5%] w-[120%] h-[40%]"
+        style={{ animationDelay: "-4s", animationDuration: "18s", opacity: 0.6 }}
         viewBox="0 0 1440 320"
         preserveAspectRatio="none"
       >
         <path
-          fill="rgba(0, 255, 194, 0.08)"
+          fill="rgba(0, 255, 194, 0.1)"
           d="M0,256L60,240C120,224,240,192,360,181.3C480,171,600,181,720,197.3C840,213,960,235,1080,229.3C1200,224,1320,192,1380,176L1440,160L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"
         />
       </svg>
 
-      {/* Rising particles */}
       {particles.map((p) => (
         <span
           key={p.id}
-          className="land-particle absolute bottom-0 rounded-full bg-primary-container"
+          className="land-particle absolute bottom-0 rounded-full bg-[#00d1ff]"
           style={{
             left: p.left,
             width: p.size,
             height: p.size,
             animationDelay: p.delay,
             animationDuration: p.duration,
-            boxShadow: "0 0 8px rgba(0,209,255,0.8)",
+            boxShadow: "0 0 10px rgba(0,209,255,0.9)",
           }}
         />
       ))}
 
-      {/* Ripple accents */}
-      <span className="land-ripple absolute left-[20%] top-[40%] w-24 h-24 rounded-full border border-primary-container/40" />
+      <span className="land-ripple absolute left-[18%] top-[38%] w-28 h-28 rounded-full border border-[#00d1ff]/50" />
       <span
-        className="land-ripple absolute right-[25%] top-[55%] w-16 h-16 rounded-full border border-success-glow/30"
+        className="land-ripple absolute right-[22%] top-[52%] w-20 h-20 rounded-full border border-[#00ffc2]/40"
         style={{ animationDelay: "1.2s" }}
       />
       <span
-        className="land-ripple absolute left-[55%] top-[28%] w-20 h-20 rounded-full border border-primary/30"
+        className="land-ripple absolute left-[58%] top-[26%] w-24 h-24 rounded-full border border-[#a4e6ff]/35"
         style={{ animationDelay: "2.1s" }}
       />
 
-      <div className="absolute inset-0 kinetic-grid opacity-[0.18]" />
-      <div className="absolute inset-0 bg-gradient-to-t from-bg-obsidian via-bg-obsidian/50 to-transparent" />
+      <div className="absolute inset-0 kinetic-grid opacity-[0.22]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#03060c] via-[#03060c]/55 to-transparent" />
     </div>
   );
 }
@@ -370,13 +371,13 @@ export function LandingPage() {
           }`}
         >
           <div className="land-glass rounded-2xl p-8 md:p-12 max-w-3xl land-glow-breathe">
-            <p className="font-label-caps text-label-caps text-primary-container tracking-[0.28em] mb-4 land-fade-up land-delay-1">
+            <p className="font-label-caps text-label-caps text-primary-container tracking-[0.32em] mb-5 land-fade-up land-delay-1">
               PUSAT PANTAU KUALITAS AIR
             </p>
-            <h1 className="font-display-lg text-[clamp(2.75rem,8vw,5rem)] leading-[0.95] tracking-tighter mb-5 land-fade-up land-delay-2 land-shimmer-text">
+            <h1 className="font-display text-[clamp(3rem,9vw,5.75rem)] font-extrabold leading-[0.9] tracking-[-0.04em] mb-6 land-fade-up land-delay-2 land-shimmer-text">
               DATAVLOW.ID
             </h1>
-            <p className="max-w-xl text-lg md:text-xl text-on-surface/90 leading-relaxed mb-8 land-fade-up land-delay-3">
+            <p className="max-w-xl text-lg md:text-xl font-body-base text-on-surface/90 leading-relaxed mb-8 land-fade-up land-delay-3">
               Satu layar untuk menjaga ratusan titik air tetap aman — dari desa
               hingga instalasi besar, hidup dan bergerak setiap detik.
             </p>
