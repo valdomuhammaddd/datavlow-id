@@ -43,9 +43,11 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isApi = path.startsWith("/api/");
   const isPublic =
+    path === "/" ||
     path.startsWith("/login") ||
     path.startsWith("/signup") ||
     path.startsWith("/setup") ||
+    path.startsWith("/help") ||
     path.startsWith("/api/v1/telemetry") ||
     path.startsWith("/api/v1/telegram") ||
     path.startsWith("/api/v1/setup") ||

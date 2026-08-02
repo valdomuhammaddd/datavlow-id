@@ -87,6 +87,11 @@ function LoginForm() {
             Buat admin pertama
           </Link>
         </p>
+        <p>
+          <Link href="/" className="text-primary hover:underline">
+            ← Kembali ke beranda
+          </Link>
+        </p>
       </div>
     </form>
   );
