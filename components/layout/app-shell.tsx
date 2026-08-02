@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { ThemeLanguageControls } from "@/components/ui/theme-language-controls";
+import { NetworkHealthBadge } from "@/components/ui/network-health-badge";
 import { useGlobalUI } from "@/context/GlobalUIContext";
 import { signOut } from "@/lib/auth/actions";
 
@@ -55,7 +56,10 @@ export function AppShell({
             COMMAND CENTER
           </span>
         </div>
-        <ThemeLanguageControls />
+        <div className="flex items-center gap-3">
+          <NetworkHealthBadge />
+          <ThemeLanguageControls />
+        </div>
       </header>
 
       <aside className="fixed left-0 top-0 h-full hidden md:flex flex-col py-8 bg-bg-obsidian border-r border-border-glass w-64 z-40">

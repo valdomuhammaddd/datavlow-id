@@ -14,6 +14,7 @@ import {
 } from "recharts";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { FuzzyScoreGauge } from "@/components/dashboard/fuzzy-score-gauge";
 import { useGlobalUI } from "@/context/GlobalUIContext";
 import { useFleetStats } from "@/hooks/useFleetStats";
 import {
@@ -182,6 +183,13 @@ export function PrecisionTelemetryDashboard() {
   );
 }
 
+function bannerGlow(score: number | null): string {
+  if (score == null) return "from-primary/10";
+  if (score > 80) return "from-cyan-400/20 via-transparent to-transparent shadow-[inset_0_0_40px_rgba(0,209,255,0.12)]";
+  if (score >= 60) return "from-orange-500/20 via-transparent to-transparent shadow-[inset_0_0_40px_rgba(255,138,0,0.1)]";
+  return "from-red-500/25 via-transparent to-transparent shadow-[inset_0_0_48px_rgba(255,61,0,0.15)] animate-pulse";
+}
+
 const StatusBanner = memo(function StatusBanner({
   isLoading,
   waterStatus,
@@ -201,44 +209,39 @@ const StatusBanner = memo(function StatusBanner({
   scoreLabel: string;
   error: string | null;
 }) {
-  const scoreWidth = Math.min(100, Math.max(0, crispScore ?? 0));
   const displayStatus = isLoading ? "…" : statusLabel(waterStatus);
+  const score = isLoading ? null : crispScore;
 
   return (
     <section className="mb-gutter">
       <div className="glass-panel rounded-xl p-6 relative overflow-hidden group">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-50" />
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex flex-col">
-            <span className="text-label-caps font-label-caps text-on-surface-variant mb-1 uppercase tracking-widest">
-              {fuzzyLabel}
-            </span>
-            <div className="flex items-baseline gap-4">
-              <h2 className="text-display-lg font-display-lg text-on-surface leading-none">
+        <div
+          className={`absolute inset-0 bg-gradient-to-r opacity-80 ${bannerGlow(score)}`}
+        />
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-6 w-full lg:w-auto">
+            <FuzzyScoreGauge score={score} size={148} />
+            <div className="flex flex-col min-w-0">
+              <span className="text-label-caps font-label-caps text-on-surface-variant mb-1 uppercase tracking-widest">
+                {fuzzyLabel}
+              </span>
+              <h2 className="text-display-lg font-display-lg text-on-surface leading-none truncate">
                 {displayStatus}
               </h2>
-              <div className="h-2 w-32 bg-surface-variant rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary-container glow-cyan transition-all duration-500"
-                  style={{ width: `${scoreWidth}%` }}
-                />
-              </div>
-            </div>
-            {actionMessage ? (
-              <p className="mt-2 text-body-base font-body-base text-on-surface-variant max-w-xl">
-                {actionMessage}
+              {actionMessage ? (
+                <p className="mt-2 text-body-base font-body-base text-on-surface-variant max-w-xl">
+                  {actionMessage}
+                </p>
+              ) : null}
+              <p className="mt-2 text-label-caps font-label-caps text-on-surface-variant">
+                {scoreLabel}:{" "}
+                <span className="font-data-mono text-on-surface tabular-nums">
+                  {score != null ? score.toFixed(1) : "—"}
+                </span>
               </p>
-            ) : null}
+            </div>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="text-label-caps font-label-caps text-primary mb-1">
-              {scoreLabel}
-            </span>
-            <span className="text-display-lg font-display-lg text-primary-container leading-none animate-pulse-slow">
-              {crispScore != null ? crispScore.toFixed(2) : "—"}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 bg-surface-container-high/50 px-6 py-3 rounded-full border border-border-glass">
+          <div className="flex items-center gap-3 bg-surface-container-high/50 px-6 py-3 rounded-full border border-border-glass shrink-0">
             <span className="material-symbols-outlined text-success-glow animate-pulse">
               verified_user
             </span>
