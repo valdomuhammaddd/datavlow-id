@@ -186,6 +186,9 @@ const MESSAGES: Record<LocaleCode, Record<string, string>> = {
     noNotifications: "Tidak ada alert terbuka",
     viewAllAlerts: "Lihat semua",
     profile: "Profil",
+    phAsam: "Asam (< 6.5)",
+    phNetral: "Netral (6.5 – 8.5)",
+    phBasa: "Basa (> 8.5)",
   },
   EN: {
     dashboard: "Dashboard",
@@ -347,6 +350,9 @@ const MESSAGES: Record<LocaleCode, Record<string, string>> = {
     noNotifications: "No open alerts",
     viewAllAlerts: "View all",
     profile: "Profile",
+    phAsam: "Acidic (< 6.5)",
+    phNetral: "Neutral (6.5 – 8.5)",
+    phBasa: "Basic (> 8.5)",
   },
 };
 

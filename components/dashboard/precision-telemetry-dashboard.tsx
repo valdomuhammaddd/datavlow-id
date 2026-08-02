@@ -36,10 +36,15 @@ function statusLabel(status: WaterStatus | string | null | undefined): string {
   return String(status);
 }
 
-function phHint(ph: number | null | undefined): string {
+function phHint(ph: number | null | undefined, labels: {
+  asam: string;
+  netral: string;
+  basa: string;
+}): string {
   if (ph == null) return "—";
-  if (ph >= 6.5 && ph <= 8.5) return "Stable Range";
-  return "Out of Range";
+  if (ph < 6.5) return labels.asam;
+  if (ph > 8.5) return labels.basa;
+  return labels.netral;
 }
 
 function tdsHint(tds: number | null | undefined): string {
@@ -163,6 +168,9 @@ export function PrecisionTelemetryDashboard() {
           tds: t("tdsLevel"),
           turbidity: t("turbidity"),
           temperature: t("temperature"),
+          phAsam: t("phAsam"),
+          phNetral: t("phNetral"),
+          phBasa: t("phBasa"),
         }}
       />
 
@@ -300,12 +308,20 @@ const KpiGrid = memo(function KpiGrid({
     tds: string;
     turbidity: string;
     temperature: string;
+    phAsam: string;
+    phNetral: string;
+    phBasa: string;
   };
 }) {
   const ph = latest?.ph != null ? Number(latest.ph) : null;
   const tds = latest?.tds != null ? Number(latest.tds) : null;
   const turbidity = latest?.turbidity != null ? Number(latest.turbidity) : null;
   const temp = latest?.temp != null ? Number(latest.temp) : null;
+
+  const phClass =
+    ph == null ? "text-on-surface-variant" : ph < 6.5 || ph > 8.5
+      ? "text-error-alert"
+      : "text-success-glow";
 
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-widget-gap mb-gutter">
@@ -315,8 +331,12 @@ const KpiGrid = memo(function KpiGrid({
         title={labels.acidity}
         value={formatNum(ph, 1)}
         unit="pH"
-        hint={phHint(ph)}
-        hintClass="text-success-glow"
+        hint={phHint(ph, {
+          asam: labels.phAsam,
+          netral: labels.phNetral,
+          basa: labels.phBasa,
+        })}
+        hintClass={phClass}
         hintIcon="trending_up"
       />
       <KpiCard

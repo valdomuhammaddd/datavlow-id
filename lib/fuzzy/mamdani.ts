@@ -48,31 +48,34 @@ function round1(n: number): number {
 }
 
 /**
- * Fuzzification aligned to Kelas II thresholds:
- * - pH: Asam (<6), Normal (6–8.5), Basa (>8.5)
- * - TDS: Rendah (<300), Sedang (300–500), Tinggi (>500)
- * - Turbidity: Jernih (<5), Agak Keruh (5–25), Keruh (>25)
+ * Fuzzification — pH per operator rule:
+ * - Asam: < 6.5
+ * - Netral: 6.5 – 8.5
+ * - Basa: > 8.5
+ * TDS / Turbidity remain Kelas II style bands.
  */
 export function fuzzify(input: FuzzyInput) {
   const { ph: phVal, tds, turbidity } = input;
 
   const phMem = {
-    asam: trap(phVal, 0, 0, 5.5, 6.5),
-    normal: trap(phVal, 5.8, 6.5, 8.0, 8.8),
-    basa: trap(phVal, 8.2, 8.8, 14, 14),
+    // Asam: < 6.5 (full below 6.4, zero at 6.5)
+    asam: trap(phVal, 0, 0, 6.4, 6.5),
+    // Netral: 6.5 – 8.5 inclusive (key `normal` for rules)
+    normal: trap(phVal, 6.49, 6.5, 8.5, 8.51),
+    // Basa: > 8.5
+    basa: trap(phVal, 8.5, 8.55, 14, 14),
   };
 
-  // Soft overlap around class boundaries for continuous Mamdani surfaces
   const tdsMem = {
     rendah: trap(tds, 0, 0, 250, 350),
     sedang: triangle(tds, 280, 400, 520),
-    tinggi: trap(tds, 450, 550, 3000, 3000),
+    tinggi: trap(tds, 450, 550, 5000, 5000),
   };
 
   const turbMem = {
     jernih: trap(turbidity, 0, 0, 3.5, 6),
     agak_keruh: triangle(turbidity, 4, 12, 28),
-    keruh: trap(turbidity, 20, 30, 200, 200),
+    keruh: trap(turbidity, 20, 30, 5000, 5000),
   };
 
   return { ph: phMem, tds: tdsMem, turbidity: turbMem };
@@ -123,14 +126,14 @@ function evaluateRules(m: ReturnType<typeof fuzzify>) {
     {
       id: "R5",
       strength: and(m.ph.asam, m.tds.rendah, m.turbidity.jernih),
-      out: "cukup",
-      status: "Cukup Baik",
+      out: "buruk",
+      status: "Tidak Baik",
     },
     {
       id: "R6",
       strength: and(m.ph.basa, m.tds.rendah, m.turbidity.jernih),
-      out: "cukup",
-      status: "Cukup Baik",
+      out: "buruk",
+      status: "Tidak Baik",
     },
     {
       id: "R7",
@@ -168,6 +171,19 @@ function evaluateRules(m: ReturnType<typeof fuzzify>) {
       out: "buruk",
       status: "Tidak Baik",
     },
+    // Extreme pH alone (outside 6.5–8.5) → TIDAK BAIK
+    {
+      id: "R13",
+      strength: m.ph.asam,
+      out: "buruk",
+      status: "Tidak Baik",
+    },
+    {
+      id: "R14",
+      strength: m.ph.basa,
+      out: "buruk",
+      status: "Tidak Baik",
+    },
   ];
 
   return rules;
@@ -183,9 +199,10 @@ function defuzzify(
   }
 
   const weightSum = agg.baik + agg.cukup + agg.buruk;
+  // No fired rules / uncovered → invalid reading, not a mid "50"
   const crisp_score =
     weightSum <= 0
-      ? 50
+      ? 0
       : round1(
           (agg.baik * OUTPUT_CENTROIDS.baik +
             agg.cukup * OUTPUT_CENTROIDS.cukup +
@@ -193,7 +210,6 @@ function defuzzify(
             weightSum,
         );
 
-  // UI gauge bands: >80 BAIK · 60–80 CUKUP · <60 TIDAK BAIK
   let water_status: WaterStatus;
   if (crisp_score > 80) water_status = "Baik";
   else if (crisp_score >= 60) water_status = "Cukup Baik";
