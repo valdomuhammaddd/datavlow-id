@@ -171,3 +171,123 @@ html.light body {
   @apply text-on-surface;
   color: #10131a;
 }
+
+/* Landing — motion system */
+@keyframes land-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes land-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes land-pulse-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@keyframes land-dash {
+  to {
+    stroke-dashoffset: -240;
+  }
+}
+
+@keyframes land-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes land-scan {
+  0% {
+    transform: translateY(-20%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.55;
+  }
+  80% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+}
+
+@keyframes land-glow-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 24px rgba(0, 209, 255, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 48px rgba(0, 209, 255, 0.35);
+  }
+}
+
+.land-fade-up {
+  animation: land-fade-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.land-float {
+  animation: land-float 5.5s ease-in-out infinite;
+}
+
+.land-pulse-ring {
+  animation: land-pulse-ring 2.4s ease-out infinite;
+}
+
+.land-dash {
+  stroke-dasharray: 8 12;
+  animation: land-dash 12s linear infinite;
+}
+
+.land-ticker {
+  animation: land-ticker 32s linear infinite;
+}
+
+.land-scan {
+  animation: land-scan 5s ease-in-out infinite;
+}
+
+.land-glow-breathe {
+  animation: land-glow-breathe 3.2s ease-in-out infinite;
+}
+
+.land-delay-1 {
+  animation-delay: 0.12s;
+}
+.land-delay-2 {
+  animation-delay: 0.24s;
+}
+.land-delay-3 {
+  animation-delay: 0.36s;
+}
+.land-delay-4 {
+  animation-delay: 0.48s;
+}
+.land-delay-5 {
+  animation-delay: 0.6s;
+}
