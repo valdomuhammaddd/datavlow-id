@@ -12,7 +12,7 @@ const NAV = [
   { href: "/dashboard", icon: "dashboard", labelKey: "dashboard" },
   { href: "/devices", icon: "router", labelKey: "devices" },
   { href: "/logic", icon: "account_tree", labelKey: "logicBuilder" },
-  { href: "/analytics", icon: "analytics", labelKey: "analytics" },
+  { href: "/ledger", icon: "table_chart", labelKey: "analytics" },
   { href: "/simulation", icon: "developer_board", labelKey: "simulation" },
   { href: "/settings", icon: "settings", labelKey: "settings" },
   { href: "/help", icon: "help", labelKey: "help" },
@@ -23,6 +23,9 @@ const MOBILE_PRIMARY = NAV.slice(0, 4);
 function isActive(pathname: string, href: string) {
   if (href === "/dashboard") {
     return pathname === "/" || pathname.startsWith("/dashboard");
+  }
+  if (href === "/ledger") {
+    return pathname.startsWith("/ledger") || pathname.startsWith("/analytics");
   }
   return pathname.startsWith(href);
 }

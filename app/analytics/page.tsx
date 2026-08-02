@@ -1,5 +1,6 @@
-import { HistoricalLedger } from "@/components/ledger/historical-ledger";
+import { redirect } from "next/navigation";
 
-export default function AnalyticsPage() {
-  return <HistoricalLedger />;
+/** Legacy route — ledger spreadsheet now lives at /ledger. */
+export default function AnalyticsRedirectPage() {
+  redirect("/ledger");
 }

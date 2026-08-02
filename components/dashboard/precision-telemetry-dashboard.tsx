@@ -2,6 +2,16 @@
 
 import Link from "next/link";
 import { memo, useDeferredValue, useMemo } from "react";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { useGlobalUI } from "@/context/GlobalUIContext";
@@ -10,7 +20,6 @@ import {
   useRealtimeTelemetry,
   type RealtimeChartPoint as ChartPoint,
 } from "@/hooks/useRealtimeTelemetry";
-import { buildKineticWavePath } from "@/lib/telemetry/chart-path";
 import type { TelemetryLog, WaterStatus } from "@/types/database.types";
 
 function formatNum(value: number | null | undefined, digits = 1): string {
@@ -20,9 +29,10 @@ function formatNum(value: number | null | undefined, digits = 1): string {
   return Number(value).toFixed(digits);
 }
 
+/** Banner / KPI status — missing water_status → Memproses... */
 function statusLabel(status: WaterStatus | string | null | undefined): string {
-  if (!status) return "STANDBY";
-  return String(status).toUpperCase();
+  if (!status) return "Memproses...";
+  return String(status);
 }
 
 function phHint(ph: number | null | undefined): string {
@@ -50,13 +60,19 @@ function tempHint(temp: number | null | undefined, baseline = 24.5): string {
   return `${sign}${delta.toFixed(1)}° Variance`;
 }
 
+/**
+ * Precision Telemetry — REAL-TIME GRAPH VIEW ONLY.
+ * Spreadsheet lives at /ledger (and /analytics).
+ */
 export function PrecisionTelemetryDashboard() {
   const { t } = useGlobalUI();
-  const { latest, chartSeries, isLive, isLoading, error } =
+  const { latest, chartSeries, isLive, isLoading, error, logs } =
     useRealtimeTelemetry();
   const fleet = useFleetStats();
 
   const deferredSeries = useDeferredValue(chartSeries);
+
+  console.log("Dashboard bind — latest:", latest, "series:", chartSeries.length);
 
   const waterStatus = latest?.water_status ?? null;
   const crispScore =
@@ -64,14 +80,41 @@ export function PrecisionTelemetryDashboard() {
   const actionMessage = latest?.action_message ?? null;
 
   const badge = useMemo(() => {
+    if (!waterStatus) return "Memproses...";
     if (waterStatus === "Baik") return t("systemOptimal");
     if (waterStatus === "Cukup Baik") return t("systemCaution");
     if (waterStatus === "Tidak Baik") return t("systemAlert");
-    return t("awaitingTelemetry");
+    return "Memproses...";
   }, [waterStatus, t]);
 
   return (
     <AppShell>
+      <div className="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+        <div>
+          <p className="font-label-caps text-[10px] text-primary tracking-[0.14em]">
+            REAL-TIME GRAPH VIEW
+          </p>
+          <h2 className="font-display text-2xl font-bold text-on-surface tracking-tight">
+            Precision Telemetry
+          </h2>
+          <p className="text-sm text-on-surface-variant mt-1">
+            Live KPI + multi-line chart (last {logs.length}/30 points). Spreadsheet
+            data is on{" "}
+            <Link href="/ledger" className="text-primary hover:underline">
+              Ledger
+            </Link>
+            .
+          </p>
+        </div>
+        <Link
+          href="/ledger"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border-glass font-label-caps text-[11px] hover:border-primary/40"
+        >
+          <span className="material-symbols-outlined text-[18px]">table_chart</span>
+          OPEN SPREADSHEET LEDGER
+        </Link>
+      </div>
+
       <StatusBanner
         isLoading={isLoading}
         waterStatus={waterStatus}
@@ -97,8 +140,8 @@ export function PrecisionTelemetryDashboard() {
       <KineticChart
         series={deferredSeries}
         isLive={isLive}
-        title={t("telemetryTopography")}
-        subtitle={t("kineticTrends")}
+        title="Kinetic Sensor Streams"
+        subtitle="Multi-line · pH · TDS · Turbidity · Temp · X = HH:mm"
         liveLabel={t("liveStream")}
         connectingLabel={t("connecting")}
       />
@@ -159,6 +202,7 @@ const StatusBanner = memo(function StatusBanner({
   error: string | null;
 }) {
   const scoreWidth = Math.min(100, Math.max(0, crispScore ?? 0));
+  const displayStatus = isLoading ? "…" : statusLabel(waterStatus);
 
   return (
     <section className="mb-gutter">
@@ -171,7 +215,7 @@ const StatusBanner = memo(function StatusBanner({
             </span>
             <div className="flex items-baseline gap-4">
               <h2 className="text-display-lg font-display-lg text-on-surface leading-none">
-                {isLoading ? "…" : statusLabel(waterStatus)}
+                {displayStatus}
               </h2>
               <div className="h-2 w-32 bg-surface-variant rounded-full overflow-hidden">
                 <div
@@ -343,16 +387,12 @@ const KineticChart = memo(function KineticChart({
   liveLabel: string;
   connectingLabel: string;
 }) {
-  const { area, stroke } = useMemo(
-    () => buildKineticWavePath(series),
-    [series],
-  );
-  const bufferLoad = Math.min(100, Math.round((series.length / 25) * 100));
+  const bufferLoad = Math.min(100, Math.round((series.length / 30) * 100));
 
   return (
     <section className="mb-gutter">
-      <div className="glass-panel rounded-xl p-6 relative overflow-hidden min-h-[320px]">
-        <div className="flex justify-between items-start mb-6 relative z-10">
+      <div className="glass-panel rounded-xl p-6 relative overflow-hidden min-h-[360px]">
+        <div className="flex justify-between items-start mb-4 relative z-10">
           <div>
             <h3 className="text-headline-md font-headline-md text-on-surface">
               {title}
@@ -372,43 +412,116 @@ const KineticChart = memo(function KineticChart({
               {isLive ? liveLabel : connectingLabel}
             </span>
             <span className="text-data-mono font-data-mono text-primary">
-              {bufferLoad}% UTILIZED
+              {bufferLoad}% · {series.length}/30
             </span>
           </div>
         </div>
 
-        <div className="relative h-64">
-          <svg
-            className="absolute bottom-0 w-full h-64 overflow-visible pointer-events-none"
-            preserveAspectRatio="none"
-            viewBox="0 0 1600 400"
-          >
-            <path d={area} fill="url(#gradient1)" opacity="0.1" />
-            <path
-              d={stroke}
-              fill="none"
-              stroke="rgba(0, 209, 255, 0.4)"
-              strokeWidth="2"
-            />
-            <defs>
-              <linearGradient id="gradient1" x1="0%" x2="0%" y1="0%" y2="100%">
-                <stop
-                  offset="0%"
-                  style={{
-                    stopColor: "rgba(0, 209, 255, 0.5)",
-                    stopOpacity: 1,
+        <div className="h-72 w-full">
+          {series.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-on-surface-variant font-label-caps text-sm">
+              Waiting for telemetry…
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={series}
+                margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid
+                  stroke="rgba(255,255,255,0.06)"
+                  strokeDasharray="3 3"
+                />
+                <XAxis
+                  dataKey="time"
+                  tick={{ fill: "#bbc9cf", fontSize: 11 }}
+                  axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
+                  tickLine={false}
+                />
+                <YAxis
+                  yAxisId="left"
+                  tick={{ fill: "#bbc9cf", fontSize: 11 }}
+                  axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
+                  tickLine={false}
+                  width={40}
+                  label={{
+                    value: "pH / NTU / °C",
+                    angle: -90,
+                    position: "insideLeft",
+                    fill: "#859399",
+                    fontSize: 10,
                   }}
                 />
-                <stop
-                  offset="100%"
-                  style={{
-                    stopColor: "rgba(0, 209, 255, 0)",
-                    stopOpacity: 0,
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fill: "#bbc9cf", fontSize: 11 }}
+                  axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
+                  tickLine={false}
+                  width={48}
+                  label={{
+                    value: "TDS ppm",
+                    angle: 90,
+                    position: "insideRight",
+                    fill: "#859399",
+                    fontSize: 10,
                   }}
                 />
-              </linearGradient>
-            </defs>
-          </svg>
+                <Tooltip
+                  contentStyle={{
+                    background: "#1d2026",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ color: "#a4e6ff" }}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: 11, color: "#bbc9cf" }}
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="ph"
+                  name="pH"
+                  stroke="#00d1ff"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="tds"
+                  name="TDS"
+                  stroke="#ffb77f"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="turbidity"
+                  name="Turbidity"
+                  stroke="#00FFC2"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="temp"
+                  name="Temp"
+                  stroke="#feb127"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </section>

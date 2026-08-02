@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
-import type { TelemetryLog } from "@/types/database.types";
+import type { TelemetryLog, WaterStatus } from "@/types/database.types";
 
-const HISTORY_LIMIT = 25;
+const HISTORY_LIMIT = 30;
 const CHANNEL_NAME = "datavlow_telemetry_realtime";
 
 export type RealtimeChartPoint = {
   id: number;
+  time: string;
   ph: number;
   tds: number;
   turbidity: number;
@@ -19,20 +20,57 @@ export type RealtimeChartPoint = {
 };
 
 export type UseRealtimeTelemetryResult = {
-  /** Newest-first capped buffer (max 25). */
+  /** Newest-first capped buffer (max 30). */
   logs: TelemetryLog[];
   /** Most recent row — feed KPI cards + status banner. */
   latest: TelemetryLog | null;
-  /** Chronological series for the Kinetic Wave chart. */
+  /** Chronological series (oldest → newest) for the Kinetic chart. */
   chartSeries: RealtimeChartPoint[];
   isLoading: boolean;
   isLive: boolean;
   error: string | null;
 };
 
+function toNumber(value: unknown): number {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function formatTimeLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "--:--";
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+function normalizeRow(raw: Record<string, unknown>): TelemetryLog | null {
+  const id = typeof raw.id === "number" ? raw.id : Number(raw.id);
+  if (!Number.isFinite(id)) return null;
+
+  const waterRaw = raw.water_status;
+  const water_status =
+    waterRaw === "Baik" || waterRaw === "Cukup Baik" || waterRaw === "Tidak Baik"
+      ? (waterRaw as WaterStatus)
+      : null;
+
+  return {
+    id,
+    device_id: String(raw.device_id ?? ""),
+    ph: raw.ph == null ? null : toNumber(raw.ph),
+    tds: raw.tds == null ? null : toNumber(raw.tds),
+    turbidity: raw.turbidity == null ? null : toNumber(raw.turbidity),
+    temp: raw.temp == null ? null : toNumber(raw.temp),
+    crisp_score: raw.crisp_score == null ? null : toNumber(raw.crisp_score),
+    water_status,
+    action_message:
+      typeof raw.action_message === "string" ? raw.action_message : null,
+    created_at: String(raw.created_at ?? new Date().toISOString()),
+  };
+}
+
 function toChartPoint(row: TelemetryLog): RealtimeChartPoint {
   return {
     id: row.id,
+    time: formatTimeLabel(row.created_at),
     ph: Number(row.ph ?? 0),
     tds: Number(row.tds ?? 0),
     turbidity: Number(row.turbidity ?? 0),
@@ -51,8 +89,8 @@ function prependCap(
 }
 
 /**
- * Phase 3 — Supabase Realtime engine for Precision Telemetry UI #7.
- * Hydrates latest 25 logs, then prepends on INSERT (capped at 25).
+ * Real-time telemetry for Precision Telemetry dashboard ONLY.
+ * Ledger spreadsheet must use `/api/v1/ledger` — not this hook.
  */
 export function useRealtimeTelemetry(): UseRealtimeTelemetryResult {
   const [logs, setLogs] = useState<TelemetryLog[]>([]);
@@ -73,12 +111,18 @@ export function useRealtimeTelemetry(): UseRealtimeTelemetryResult {
     if (!mounted.current) return;
 
     if (fetchError) {
+      console.error("[useRealtimeTelemetry] hydrate failed:", fetchError);
       setError(fetchError.message);
       setIsLoading(false);
       return;
     }
 
-    setLogs((data ?? []) as TelemetryLog[]);
+    const rows = ((data ?? []) as Record<string, unknown>[])
+      .map(normalizeRow)
+      .filter((r): r is TelemetryLog => r != null);
+
+    console.log("Realtime hydrate:", rows.length, "rows", rows[0] ?? null);
+    setLogs(rows);
     setError(null);
     setIsLoading(false);
   }, []);
@@ -99,12 +143,25 @@ export function useRealtimeTelemetry(): UseRealtimeTelemetryResult {
           table: "telemetry_logs",
         },
         (payload) => {
-          const row = payload.new as TelemetryLog;
-          if (!row?.id) return;
+          console.log("Realtime payload:", payload);
+          const row = normalizeRow(payload.new as Record<string, unknown>);
+          if (!row) {
+            console.warn("[useRealtimeTelemetry] invalid INSERT payload", payload.new);
+            return;
+          }
+          console.log("Realtime mapped row:", {
+            id: row.id,
+            ph: row.ph,
+            tds: row.tds,
+            turbidity: row.turbidity,
+            temp: row.temp,
+            water_status: row.water_status,
+          });
           setLogs((prev) => prependCap(prev, row));
         },
       )
       .subscribe((status) => {
+        console.log("[useRealtimeTelemetry] channel status:", status);
         if (!mounted.current) return;
         setIsLive((prev) => {
           const next = status === "SUBSCRIBED";

@@ -1,11 +1,11 @@
-import type { RealtimeChartPoint as ChartPoint } from "@/hooks/useRealtimeTelemetry";
+import type { RealtimeChartPoint } from "@/hooks/useRealtimeTelemetry";
 
 /**
  * Builds an SVG path for the kinetic wave from telemetry points (crisp_score).
- * Preserves the decorative topography look from DESAINUI.
+ * Prefer Recharts multi-line on the dashboard; this remains for decorative fallbacks.
  */
 export function buildKineticWavePath(
-  series: ChartPoint[],
+  series: Array<Pick<RealtimeChartPoint, "crisp_score">>,
   width = 1600,
   height = 200,
 ): { area: string; stroke: string } {

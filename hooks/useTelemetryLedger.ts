@@ -2,112 +2,110 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { createClient } from "@/lib/supabase/client";
 import type { TelemetryLog, WaterStatus } from "@/types/database.types";
 
 const PAGE_SIZE = 25;
-const FETCH_LIMIT = 200;
-const CHANNEL = "ledger_telemetry_inserts";
 
 export type LedgerStatusFilter = "all" | WaterStatus;
 
+type LedgerPagination = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+/**
+ * Spreadsheet ledger — fetches ONLY from `/api/v1/ledger`.
+ * Do not mix with useRealtimeTelemetry (dashboard chart view).
+ */
 export function useTelemetryLedger() {
-  const [logs, setLogs] = useState<TelemetryLog[]>([]);
+  const [rows, setRows] = useState<TelemetryLog[]>([]);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<LedgerStatusFilter>("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLive, setIsLive] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [totalEstimate, setTotalEstimate] = useState(0);
+  const [pagination, setPagination] = useState<LedgerPagination>({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
-    const supabase = createClient();
+    const params = new URLSearchParams({
+      page: String(page),
+      pageSize: String(PAGE_SIZE),
+    });
+    if (query.trim()) params.set("nodeId", query.trim());
+    if (statusFilter !== "all") params.set("status", statusFilter);
 
-    const { data, error: fetchError, count } = await supabase
-      .from("telemetry_logs")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .limit(FETCH_LIMIT);
+    try {
+      const res = await fetch(`/api/v1/ledger?${params.toString()}`, {
+        cache: "no-store",
+      });
+      const json = (await res.json()) as {
+        data?: TelemetryLog[];
+        pagination?: LedgerPagination;
+        error?: string;
+      };
 
-    if (fetchError) {
-      setError(fetchError.message);
+      console.log("Ledger API payload:", json);
+
+      if (!res.ok) {
+        setError(json.error ?? `Ledger failed (${res.status})`);
+        setIsLoading(false);
+        return;
+      }
+
+      setRows(json.data ?? []);
+      setPagination(
+        json.pagination ?? {
+          page,
+          pageSize: PAGE_SIZE,
+          total: json.data?.length ?? 0,
+          totalPages: 1,
+        },
+      );
+      setError(null);
+    } catch (err) {
+      console.error("[useTelemetryLedger] fetch error:", err);
+      setError(err instanceof Error ? err.message : "Ledger fetch failed");
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    setLogs((data ?? []) as TelemetryLog[]);
-    setTotalEstimate(count ?? data?.length ?? 0);
-    setError(null);
-    setIsLoading(false);
-  }, []);
+  }, [page, query, statusFilter]);
 
   useEffect(() => {
     void refresh();
-
-    const supabase = createClient();
-    const channel = supabase
-      .channel(CHANNEL)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "telemetry_logs",
-        },
-        (payload) => {
-          const row = payload.new as TelemetryLog;
-          if (!row?.id) return;
-          setLogs((prev) => {
-            if (prev.some((r) => r.id === row.id)) return prev;
-            return [row, ...prev].slice(0, FETCH_LIMIT);
-          });
-          setTotalEstimate((n) => n + 1);
-        },
-      )
-      .subscribe((status) => {
-        setIsLive(status === "SUBSCRIBED");
-      });
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
   }, [refresh]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return logs.filter((row) => {
-      if (statusFilter !== "all" && row.water_status !== statusFilter) {
-        return false;
-      }
-      if (!q) return true;
-      return row.device_id.toLowerCase().includes(q);
-    });
-  }, [logs, query, statusFilter]);
+  // Client-side debounce for search: reset to page 1 when filters change
+  const setQueryAndReset = useCallback((value: string) => {
+    setQuery(value);
+    setPage(1);
+  }, []);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const setStatusAndReset = useCallback((value: LedgerStatusFilter) => {
+    setStatusFilter(value);
+    setPage(1);
+  }, []);
 
-  const pageRows = useMemo(() => {
-    const start = page * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
-
+  const pageCount = pagination.totalPages;
   const pageWindow = useMemo(() => {
+    const current = Math.max(0, page - 1);
     if (pageCount <= 5) {
       return Array.from({ length: pageCount }, (_, i) => i);
     }
-    const start = Math.max(0, Math.min(page - 1, pageCount - 3));
+    const start = Math.max(0, Math.min(current - 1, pageCount - 3));
     return [start, start + 1, start + 2].filter((i) => i < pageCount);
   }, [page, pageCount]);
 
-  useEffect(() => {
-    if (page > pageCount - 1) setPage(0);
-  }, [page, pageCount]);
-
   const stats = useMemo(() => {
-    if (!filtered.length) {
+    if (!rows.length) {
       return { avgPh: null, avgTds: null, avgTemp: null, nodeCount: 0 };
     }
 
@@ -119,7 +117,7 @@ export function useTelemetryLedger() {
     let tempN = 0;
     const nodes = new Set<string>();
 
-    for (const row of filtered) {
+    for (const row of rows) {
       nodes.add(row.device_id);
       if (row.ph != null) {
         phSum += Number(row.ph);
@@ -141,27 +139,34 @@ export function useTelemetryLedger() {
       avgTemp: tempN ? tempSum / tempN : null,
       nodeCount: nodes.size,
     };
-  }, [filtered]);
+  }, [rows]);
 
   return {
-    logs,
-    filtered,
-    pageRows,
+    /** Current page rows from API — bind directly to table. */
+    pageRows: rows,
+    /** Alias for export of current page (API-backed). */
+    filtered: rows,
     query,
-    setQuery,
+    setQuery: setQueryAndReset,
     statusFilter,
-    setStatusFilter,
+    setStatusFilter: setStatusAndReset,
     filtersOpen,
     setFiltersOpen,
-    page,
-    setPage,
+    /** 0-based page index for UI buttons */
+    page: page - 1,
+    setPage: (updater: number | ((p: number) => number)) => {
+      setPage((prev) => {
+        const zeroBased = typeof updater === "function" ? updater(prev - 1) : updater;
+        return Math.max(1, zeroBased + 1);
+      });
+    },
     pageCount,
     pageWindow,
     pageSize: PAGE_SIZE,
-    totalEstimate,
+    totalEstimate: pagination.total,
     stats,
     isLoading,
-    isLive,
+    isLive: false,
     error,
     refresh,
   };
