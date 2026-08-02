@@ -180,7 +180,7 @@ export function LogicBuilder() {
             {t("logicBuilder")}
           </h2>
           <p className="text-on-surface-variant text-sm mt-1 max-w-2xl">
-            {t("logicBuilderDesc")} · {nodeCount} nodes
+            {t("logicBuilderDesc")} · {nodeCount} {t("nodesCount")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
