@@ -57,6 +57,7 @@ export function LogicBuilder() {
   const [testResult, setTestResult] = useState<WorkflowTestResult | null>(null);
   const [inputs, setInputs] = useState({ temp: 29, ph: 7.1, tds: 320 });
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const load = useCallback(async () => {
@@ -107,6 +108,7 @@ export function LogicBuilder() {
   const save = (status: "draft" | "live" = "draft") => {
     start(async () => {
       setError(null);
+      setNotice(null);
       const res = await fetch("/api/v1/workflows", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -124,6 +126,11 @@ export function LogicBuilder() {
         return;
       }
       setWorkflowId(json.data?.id ?? null);
+      setNotice(
+        status === "live"
+          ? `${t("publishLive")} · ${json.data?.name ?? name}`
+          : `${t("saveDraft")} · v${json.data?.version ?? "?"}`,
+      );
       await load();
     });
   };
@@ -131,6 +138,7 @@ export function LogicBuilder() {
   const runTest = () => {
     start(async () => {
       setError(null);
+      setNotice(null);
       const res = await fetch("/api/v1/workflows", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,6 +157,11 @@ export function LogicBuilder() {
         return;
       }
       setTestResult(json.result ?? null);
+      setNotice(
+        json.result?.success
+          ? `${t("dryRunTest")} OK · ${json.result.ops} ops`
+          : `${t("dryRunTest")} FAIL`,
+      );
     });
   };
 
@@ -161,13 +174,13 @@ export function LogicBuilder() {
 
   return (
     <AppShell>
-      <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <header className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="font-headline-md text-headline-md text-on-surface">
             {t("logicBuilder")}
           </h2>
-          <p className="text-on-surface-variant text-sm mt-1">
-            Build IF/THEN automation graphs · {nodeCount} nodes
+          <p className="text-on-surface-variant text-sm mt-1 max-w-2xl">
+            {t("logicBuilderDesc")} · {nodeCount} nodes
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -175,36 +188,73 @@ export function LogicBuilder() {
             type="button"
             disabled={pending}
             onClick={() => save("draft")}
-            className="px-4 py-2 rounded-lg border border-border-glass font-label-caps text-xs"
+            className="px-4 py-2 rounded-lg border border-border-glass font-label-caps text-xs text-on-surface"
+            title={t("saveDraft")}
           >
-            SAVE DRAFT
+            {t("saveDraft")}
           </button>
           <button
             type="button"
             disabled={pending}
             onClick={() => save("live")}
             className="px-4 py-2 rounded-lg bg-primary-container text-on-primary-container font-label-caps text-xs font-bold"
+            title={t("publishLiveHint")}
           >
-            PUBLISH LIVE
+            {t("publishLive")}
           </button>
           <button
             type="button"
             disabled={pending}
             onClick={runTest}
-            className="px-4 py-2 rounded-lg bg-surface-container text-primary font-label-caps text-xs"
+            className="px-4 py-2 rounded-lg border border-primary/40 text-primary font-label-caps text-xs font-bold"
+            title={t("dryRunHint")}
           >
-            DRY-RUN TEST
+            {t("dryRunTest")}
           </button>
         </div>
       </header>
 
+      <div className="grid md:grid-cols-2 gap-3 mb-6">
+        <div className="glass-panel rounded-xl p-4 border-l-4 border-l-primary-container">
+          <p className="font-label-caps text-[10px] text-primary mb-1">
+            {t("publishLive")}
+          </p>
+          <p className="text-sm text-on-surface-variant leading-relaxed">
+            {t("publishLiveHint")}
+          </p>
+        </div>
+        <div className="glass-panel rounded-xl p-4 border-l-4 border-l-tertiary-container">
+          <p className="font-label-caps text-[10px] text-tertiary-container mb-1">
+            {t("dryRunTest")}
+          </p>
+          <p className="text-sm text-on-surface-variant leading-relaxed">
+            {t("dryRunHint")}
+          </p>
+        </div>
+      </div>
+
+      {(notice || error) && (
+        <p
+          className={`mb-4 font-label-caps text-sm ${
+            error ? "text-error-alert" : "text-success-glow"
+          }`}
+        >
+          {error || notice}
+        </p>
+      )}
+
       <div className="grid lg:grid-cols-3 gap-6">
         <section className="lg:col-span-2 space-y-4">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full bg-bg-obsidian border border-border-glass rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
-          />
+          <label className="block space-y-1">
+            <span className="font-label-caps text-[10px] text-on-surface-variant">
+              {t("workflowName")}
+            </span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-bg-obsidian border border-border-glass rounded-lg px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary"
+            />
+          </label>
 
           <div className="flex flex-wrap gap-2">
             {NODE_TYPES.map((type) => (
@@ -212,7 +262,7 @@ export function LogicBuilder() {
                 key={type}
                 type="button"
                 onClick={() => addNode(type)}
-                className="px-3 py-1.5 rounded-lg border border-border-glass text-[10px] font-label-caps hover:border-primary"
+                className="px-3 py-1.5 rounded-lg border border-border-glass text-[10px] font-label-caps text-on-surface hover:border-primary"
               >
                 + {type}
               </button>
@@ -221,10 +271,13 @@ export function LogicBuilder() {
 
           <div className="space-y-3">
             {definition.nodes.map((node, idx) => (
-              <div key={node.id} className="glass-panel rounded-xl p-4">
+              <div key={node.id} className="glass-panel rounded-xl p-4 relative">
+                {idx < definition.nodes.length - 1 ? (
+                  <div className="absolute left-8 -bottom-3 w-0.5 h-3 bg-primary/40 z-10" />
+                ) : null}
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-label-caps text-[10px] text-primary">
-                    STEP {idx + 1} · {node.type}
+                    {t("step")} {idx + 1} · {node.type}
                   </span>
                   <button
                     type="button"
@@ -238,7 +291,7 @@ export function LogicBuilder() {
                       }))
                     }
                   >
-                    Remove
+                    {t("remove")}
                   </button>
                 </div>
                 <input
@@ -251,9 +304,9 @@ export function LogicBuilder() {
                       ),
                     }))
                   }
-                  className="w-full bg-bg-obsidian border border-border-glass rounded-lg px-3 py-2 text-sm mb-2"
+                  className="w-full bg-bg-obsidian border border-border-glass rounded-lg px-3 py-2 text-sm text-on-surface mb-2"
                 />
-                <pre className="text-xs font-data-mono text-on-surface-variant overflow-x-auto">
+                <pre className="text-xs font-data-mono text-on-surface-variant overflow-x-auto bg-surface-container-low rounded-lg p-3">
                   {JSON.stringify(node.config, null, 2)}
                 </pre>
               </div>
@@ -264,7 +317,7 @@ export function LogicBuilder() {
         <aside className="space-y-4">
           <div className="glass-panel rounded-xl p-4 space-y-3">
             <h3 className="font-label-caps text-[10px] text-on-surface-variant">
-              TEST INPUTS
+              {t("testInputs")}
             </h3>
             {(["temp", "ph", "tds"] as const).map((key) => (
               <label key={key} className="block text-xs space-y-1">
@@ -278,23 +331,31 @@ export function LogicBuilder() {
                       [key]: Number(e.target.value),
                     }))
                   }
-                  className="w-full bg-bg-obsidian border border-border-glass rounded-lg px-3 py-2"
+                  className="w-full bg-bg-obsidian border border-border-glass rounded-lg px-3 py-2 text-on-surface"
                 />
               </label>
             ))}
+            <button
+              type="button"
+              disabled={pending}
+              onClick={runTest}
+              className="w-full py-2.5 rounded-lg bg-primary-container text-on-primary-container font-label-caps text-xs font-bold"
+            >
+              {t("dryRunTest")}
+            </button>
           </div>
 
           {testResult ? (
             <div className="glass-panel rounded-xl p-4 space-y-2">
               <h3 className="font-label-caps text-[10px] text-primary">
-                DRY-RUN · {testResult.ops} OPS ·{" "}
+                {t("dryRunResult")} · {testResult.ops} OPS ·{" "}
                 {testResult.success ? "OK" : "FAIL"}
               </h3>
               <ul className="space-y-2 max-h-64 overflow-y-auto">
                 {testResult.steps.map((step) => (
                   <li
                     key={`${step.nodeId}-${step.detail}`}
-                    className="text-xs border-b border-border-glass pb-2"
+                    className="text-xs border-b border-border-glass pb-2 text-on-surface"
                   >
                     <span className="text-primary">{step.result}</span> ·{" "}
                     {step.label}
@@ -307,7 +368,7 @@ export function LogicBuilder() {
 
           <div className="glass-panel rounded-xl p-4">
             <h3 className="font-label-caps text-[10px] text-on-surface-variant mb-3">
-              LIBRARY ({workflows.length})
+              {t("library")} ({workflows.length})
             </h3>
             <ul className="space-y-2 max-h-72 overflow-y-auto">
               {workflows.map((w) => (
@@ -315,7 +376,7 @@ export function LogicBuilder() {
                   <button
                     type="button"
                     onClick={() => openWorkflow(w)}
-                    className="w-full text-left text-sm hover:text-primary"
+                    className="w-full text-left text-sm text-on-surface hover:text-primary"
                   >
                     {w.name}
                     <span className="block text-[10px] text-on-surface-variant uppercase">
@@ -326,10 +387,6 @@ export function LogicBuilder() {
               ))}
             </ul>
           </div>
-
-          {error ? (
-            <p className="text-error-alert text-sm font-label-caps">{error}</p>
-          ) : null}
         </aside>
       </div>
     </AppShell>

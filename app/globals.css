@@ -2,18 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* ── Theme tokens (dark default) ── */
+:root,
+html.dark {
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
   --obsidian: #0b0e14;
   --ink: #e1e2eb;
+  --on-surface: #e1e2eb;
+  --on-surface-variant: #a8b8c0;
+  --surface: #10131a;
+  --surface-container: #1d2026;
+  --surface-container-low: #191c22;
+  --surface-container-high: #272a31;
+  --surface-container-highest: #32353c;
+  --surface-container-lowest: #0b0e14;
+  --surface-variant: #32353c;
+  --surface-dim: #10131a;
+  --surface-bright: #363940;
+  --surface-glass: rgba(255, 255, 255, 0.03);
+  --bg-obsidian: #0b0e14;
+  --background: #10131a;
+  --outline: #859399;
+  --outline-variant: #3c494e;
+  --row-hover: rgba(255, 255, 255, 0.03);
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --scroll-thumb: #32353c;
+  --input-bg: #0b0e14;
+  --table-stripe: rgba(255, 255, 255, 0.02);
+  --primary: #a4e6ff;
+  --primary-container: #00d1ff;
+  --success-glow: #00ffc2;
+  --tertiary: #ffd59c;
+  --error: #ffb4ab;
+  --sidebar-bg: #0b0e14;
 }
 
 html.light {
-  --glass-bg: rgba(15, 23, 42, 0.04);
+  --glass-bg: rgba(255, 255, 255, 0.85);
   --glass-border: rgba(15, 23, 42, 0.12);
-  --obsidian: #eef2f7;
+  --obsidian: #f0f4f8;
   --ink: #10131a;
+  --on-surface: #10131a;
+  --on-surface-variant: #4a5c66;
+  --surface: #ffffff;
+  --surface-container: #ffffff;
+  --surface-container-low: #f5f7fa;
+  --surface-container-high: #e8eef3;
+  --surface-container-highest: #dce4eb;
+  --surface-container-lowest: #ffffff;
+  --surface-variant: #d5dee6;
+  --surface-dim: #e8eef3;
+  --surface-bright: #ffffff;
+  --surface-glass: rgba(255, 255, 255, 0.8);
+  --bg-obsidian: #f0f4f8;
+  --background: #f0f4f8;
+  --outline: #5a6b74;
+  --outline-variant: #c5d0d6;
+  --row-hover: rgba(0, 100, 140, 0.06);
+  --grid-line: rgba(15, 23, 42, 0.06);
+  --scroll-thumb: #a8b5be;
+  --input-bg: #ffffff;
+  --table-stripe: rgba(15, 23, 42, 0.03);
+  --primary: #007a96;
+  --primary-container: #00b4d8;
+  --success-glow: #008f6a;
+  --tertiary: #b86a00;
+  --error: #c62828;
+  --sidebar-bg: #ffffff;
 }
 
 @layer base {
@@ -30,7 +86,16 @@ html.light {
   }
 
   body {
-    @apply font-body-base text-body-base text-on-surface bg-bg-obsidian;
+    @apply font-body-base text-body-base;
+    color: var(--on-surface);
+    background-color: var(--bg-obsidian);
+  }
+
+  input,
+  select,
+  textarea {
+    background-color: var(--input-bg);
+    color: var(--on-surface);
   }
 }
 
@@ -44,6 +109,10 @@ html.light {
 
 .glow-cyan {
   box-shadow: 0 0 20px rgba(0, 209, 255, 0.15);
+}
+
+html.light .glow-cyan {
+  box-shadow: 0 0 16px rgba(0, 140, 180, 0.18);
 }
 
 .neon-border {
@@ -75,8 +144,8 @@ html.light {
 
 .kinetic-grid {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
@@ -122,8 +191,8 @@ html.light {
 }
 
 .data-row:hover {
-  background: rgba(255, 255, 255, 0.02);
-  border-left: 2px solid #a4e6ff;
+  background: var(--row-hover);
+  border-left: 2px solid #00a8cc;
 }
 
 .material-symbols-outlined {
@@ -157,19 +226,19 @@ html.light {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #32353c;
+  background: var(--scroll-thumb);
   border-radius: 10px;
 }
 
-/* Light-mode glass readability */
 html.light .glass-panel {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.92);
   border-color: rgba(15, 23, 42, 0.1);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
-html.light body {
-  @apply text-on-surface;
-  color: #10131a;
+html.light aside,
+html.light header.fixed {
+  color: var(--on-surface);
 }
 
 /* Landing — motion system */
@@ -413,7 +482,10 @@ html.light body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Optional accent — keep solid brand color for readability on IoT UI */
 .land-shimmer-text {
+  color: #00a8cc;
+}
+
+html.dark .land-shimmer-text {
   color: #a4e6ff;
 }

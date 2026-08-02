@@ -132,6 +132,7 @@ export function telemetryToExportRows(
   logs: Array<{
     created_at: string;
     device_id: string;
+    device_name?: string;
     ph: number | null;
     tds: number | null;
     turbidity: number | null;
@@ -143,7 +144,7 @@ export function telemetryToExportRows(
 ): ExportRow[] {
   return logs.map((row) => ({
     timestamp: row.created_at,
-    node_id: row.device_id,
+    node_id: row.device_name || row.device_id,
     ph: row.ph,
     tds: row.tds,
     turbidity: row.turbidity,

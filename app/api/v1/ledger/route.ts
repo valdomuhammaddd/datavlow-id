@@ -1,6 +1,10 @@
-import { getSearchParams, jsonError, jsonOk } from "@/lib/api/http";
-import { isWaterStatus } from "@/lib/api/validate";
-import { parseLedgerFilters, queryLedger } from "@/lib/ledger/query";
+import { getSearchParams, jsonError, jsonOk, parseJsonBody } from "@/lib/api/http";
+import { isObject, isWaterStatus, toFiniteNumber } from "@/lib/api/validate";
+import {
+  deleteLedgerRow,
+  parseLedgerFilters,
+  queryLedger,
+} from "@/lib/ledger/query";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -42,6 +46,36 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     console.error("[ledger] unhandled error:", err);
+    return jsonError("Internal server error", 500);
+  }
+}
+
+/** Remove a single telemetry row by id. */
+export async function DELETE(request: Request) {
+  try {
+    const body = await parseJsonBody(request);
+    if (!body.ok) return body.response;
+
+    if (!isObject(body.data)) {
+      return jsonError("Invalid body", 400);
+    }
+
+    const id = toFiniteNumber(body.data.id);
+    if (id == null || id < 1) {
+      return jsonError("id is required", 400);
+    }
+
+    const supabase = createAdminClient();
+    const { error } = await deleteLedgerRow(supabase, Math.trunc(id));
+
+    if (error) {
+      console.error("[ledger] delete failed:", error.message);
+      return jsonError("Failed to delete ledger row", 500);
+    }
+
+    return jsonOk({ deleted: Math.trunc(id) });
+  } catch (err) {
+    console.error("[ledger] delete unhandled:", err);
     return jsonError("Internal server error", 500);
   }
 }

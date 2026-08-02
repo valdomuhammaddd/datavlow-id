@@ -36,7 +36,14 @@ export function NetworkHealthBadge() {
   }, []);
 
   const display = latency == null ? "—" : `${latency}ms`;
-  const healthy = ok && latency != null && latency < 800;
+  const tone =
+    !ok || latency == null
+      ? "bad"
+      : latency < 300
+        ? "good"
+        : latency < 1000
+          ? "warn"
+          : "bad";
 
   return (
     <div
@@ -45,7 +52,11 @@ export function NetworkHealthBadge() {
     >
       <span
         className={`w-1.5 h-1.5 rounded-full ${
-          healthy ? "bg-success-glow shadow-[0_0_6px_#00FFC2]" : "bg-error-alert"
+          tone === "good"
+            ? "bg-success-glow shadow-[0_0_6px_var(--success-glow)]"
+            : tone === "warn"
+              ? "bg-tertiary-container"
+              : "bg-error-alert"
         }`}
       />
       <span className="font-label-caps text-[9px] text-on-surface-variant tracking-wider">
@@ -53,7 +64,11 @@ export function NetworkHealthBadge() {
       </span>
       <span
         className={`font-data-mono text-[11px] tabular-nums ${
-          healthy ? "text-success-glow" : "text-error-alert"
+          tone === "good"
+            ? "text-success-glow"
+            : tone === "warn"
+              ? "text-tertiary-container"
+              : "text-error-alert"
         }`}
       >
         {display}

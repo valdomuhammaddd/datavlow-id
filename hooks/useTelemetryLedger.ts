@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { TelemetryLog, WaterStatus } from "@/types/database.types";
+import type { LedgerRow } from "@/lib/ledger/query";
 
 const PAGE_SIZE = 25;
 
@@ -17,10 +18,9 @@ type LedgerPagination = {
 
 /**
  * Spreadsheet ledger — fetches ONLY from `/api/v1/ledger`.
- * Do not mix with useRealtimeTelemetry (dashboard chart view).
  */
 export function useTelemetryLedger() {
-  const [rows, setRows] = useState<TelemetryLog[]>([]);
+  const [rows, setRows] = useState<LedgerRow[]>([]);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<LedgerStatusFilter>("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -48,12 +48,10 @@ export function useTelemetryLedger() {
         cache: "no-store",
       });
       const json = (await res.json()) as {
-        data?: TelemetryLog[];
+        data?: LedgerRow[];
         pagination?: LedgerPagination;
         error?: string;
       };
-
-      console.log("Ledger API payload:", json);
 
       if (!res.ok) {
         setError(json.error ?? `Ledger failed (${res.status})`);

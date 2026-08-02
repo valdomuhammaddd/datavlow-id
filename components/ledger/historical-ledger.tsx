@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState, useTransition } from "react";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { useGlobalUI } from "@/context/GlobalUIContext";
 import { useTelemetryLedger } from "@/hooks/useTelemetryLedger";
+import type { LedgerRow } from "@/lib/ledger/query";
 import { exportToCSV, telemetryToExportRows } from "@/lib/exportData";
-import type { TelemetryLog } from "@/types/database.types";
 
 function formatNum(value: number | null | undefined, digits = 1): string {
   if (value == null || Number.isNaN(Number(value))) return "—";
@@ -25,13 +25,8 @@ function statusClass(status: string | null): string {
   return "text-on-surface-variant bg-surface-variant/40";
 }
 
-function statusDisplay(status: string | null): string {
-  return status?.trim() ? status : "Memproses...";
-}
-
 /**
  * Water Quality Ledger — SPREADSHEET VIEW ONLY.
- * Real-time charts live on /dashboard (Precision Telemetry).
  */
 export function HistoricalLedger() {
   const { t } = useGlobalUI();
@@ -55,6 +50,8 @@ export function HistoricalLedger() {
   } = useTelemetryLedger();
 
   const [exportError, setExportError] = useState<string | null>(null);
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [pending, start] = useTransition();
 
   const exportRows = useMemo(
     () => telemetryToExportRows(filtered),
@@ -70,21 +67,40 @@ export function HistoricalLedger() {
     }
   }, [exportRows]);
 
+  const handleDelete = useCallback(
+    (id: number) => {
+      if (!window.confirm(t("deleteRowConfirm"))) return;
+      start(async () => {
+        const res = await fetch("/api/v1/ledger", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+        if (!res.ok) {
+          setActionMsg(t("deleteFail"));
+          return;
+        }
+        setActionMsg(t("deleteOk"));
+        await refresh();
+      });
+    },
+    [refresh, t],
+  );
+
   return (
     <AppShell>
       <header className="mb-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
           <p className="font-label-caps text-[10px] text-primary tracking-[0.14em]">
-            SPREADSHEET LEDGER VIEW
+            {t("spreadsheetView")}
           </p>
           <h2 className="font-display text-2xl font-bold text-on-surface tracking-tight">
             {t("historicalLedger")}
           </h2>
           <p className="text-sm text-on-surface-variant mt-1 max-w-xl">
-            Tabel data dari <code className="text-primary text-xs">/api/v1/ledger</code>
-            . Grafik realtime ada di{" "}
+            {t("historicalLedgerDesc")}{" "}
             <Link href="/dashboard" className="text-primary hover:underline">
-              Dashboard
+              {t("dashboard")}
             </Link>
             .
           </p>
@@ -97,21 +113,27 @@ export function HistoricalLedger() {
             className="px-4 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-label-caps text-[11px] font-bold flex items-center gap-2 hover:brightness-110"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            EXPORT CSV
+            {t("exportCsv")}
           </button>
           <button
             type="button"
             onClick={() => void refresh()}
             className="px-4 py-2.5 rounded-lg border border-border-glass font-label-caps text-[11px] hover:border-primary/40"
           >
-            REFRESH
+            {t("refresh")}
           </button>
         </div>
       </header>
 
-      {(exportError || error) && (
-        <p className="mb-4 text-label-caps font-label-caps text-error-alert">
-          {exportError || error}
+      {(exportError || error || actionMsg) && (
+        <p
+          className={`mb-4 text-label-caps font-label-caps ${
+            actionMsg && !error && !exportError
+              ? "text-success-glow"
+              : "text-error-alert"
+          }`}
+        >
+          {exportError || error || actionMsg}
         </p>
       )}
 
@@ -122,8 +144,8 @@ export function HistoricalLedger() {
               search
             </span>
             <input
-              className="bg-bg-obsidian border border-border-glass rounded-lg text-sm pl-10 pr-4 py-2 w-56 focus:border-primary outline-none"
-              placeholder={t("searchNodeId")}
+              className="bg-bg-obsidian border border-border-glass rounded-lg text-sm pl-10 pr-4 py-2 w-56 text-on-surface focus:border-primary outline-none"
+              placeholder={t("searchDeviceName")}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -143,7 +165,7 @@ export function HistoricalLedger() {
               <span className="material-symbols-outlined">filter_list</span>
             </button>
             <span className="font-label-caps text-[10px] text-on-surface-variant">
-              {totalEstimate} rows
+              {totalEstimate} {t("rows")}
             </span>
           </div>
         </div>
@@ -152,12 +174,12 @@ export function HistoricalLedger() {
           <div className="px-4 py-3 border-b border-border-glass flex flex-wrap gap-2">
             {(
               [
-                ["all", "ALL"],
-                ["Baik", "BAIK"],
-                ["Cukup Baik", "CUKUP"],
-                ["Tidak Baik", "ALERT"],
+                ["all", "filterAll"],
+                ["Baik", "filterBaik"],
+                ["Cukup Baik", "filterCukup"],
+                ["Tidak Baik", "filterAlert"],
               ] as const
-            ).map(([value, label]) => (
+            ).map(([value, key]) => (
               <button
                 key={value}
                 type="button"
@@ -168,21 +190,21 @@ export function HistoricalLedger() {
                     : "px-3 py-1 rounded-full border border-border-glass font-label-caps text-[10px] text-on-surface-variant"
                 }
               >
-                {label}
+                {t(key)}
               </button>
             ))}
           </div>
         ) : null}
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[720px]">
+          <table className="w-full text-left border-collapse min-w-[780px]">
             <thead>
-              <tr className="bg-surface-container-lowest">
+              <tr className="bg-surface-container-low">
                 <th className="px-4 py-3 font-label-caps text-[10px] text-on-surface-variant border-b border-border-glass">
-                  Timestamp
+                  {t("timestamp")}
                 </th>
                 <th className="px-4 py-3 font-label-caps text-[10px] text-on-surface-variant border-b border-border-glass">
-                  Node ID
+                  {t("deviceName")}
                 </th>
                 <th className="px-4 py-3 font-label-caps text-[10px] text-on-surface-variant border-b border-border-glass">
                   pH
@@ -191,13 +213,16 @@ export function HistoricalLedger() {
                   TDS
                 </th>
                 <th className="px-4 py-3 font-label-caps text-[10px] text-on-surface-variant border-b border-border-glass">
-                  Turbidity
+                  {t("turbidity")}
                 </th>
                 <th className="px-4 py-3 font-label-caps text-[10px] text-on-surface-variant border-b border-border-glass">
-                  Temp
+                  {t("temperature")}
                 </th>
                 <th className="px-4 py-3 font-label-caps text-[10px] text-on-surface-variant border-b border-border-glass">
-                  Status
+                  {t("status")}
+                </th>
+                <th className="px-4 py-3 font-label-caps text-[10px] text-on-surface-variant border-b border-border-glass">
+                  {t("actions")}
                 </th>
               </tr>
             </thead>
@@ -205,7 +230,7 @@ export function HistoricalLedger() {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-4 py-10 text-center text-on-surface-variant font-label-caps text-sm"
                   >
                     {t("syncing")}
@@ -214,14 +239,23 @@ export function HistoricalLedger() {
               ) : pageRows.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-4 py-10 text-center text-on-surface-variant font-label-caps text-sm"
                   >
-                    No ledger rows yet — send ESP32 telemetry or use Simulation.
+                    {t("noLedgerRows")}
                   </td>
                 </tr>
               ) : (
-                pageRows.map((row) => <LedgerRow key={row.id} row={row} />)
+                pageRows.map((row) => (
+                  <LedgerRowView
+                    key={row.id}
+                    row={row as LedgerRow}
+                    processingLabel={t("processing")}
+                    deleteLabel={t("delete")}
+                    pending={pending}
+                    onDelete={handleDelete}
+                  />
+                ))
               )}
             </tbody>
           </table>
@@ -229,8 +263,8 @@ export function HistoricalLedger() {
 
         <div className="px-4 py-3 border-t border-border-glass flex justify-between items-center">
           <p className="font-label-caps text-[10px] text-on-surface-variant">
-            Page {page + 1} / {pageCount} · showing {pageRows.length} of{" "}
-            {totalEstimate}
+            {t("pageOf")} {page + 1} / {pageCount} · {t("showing")}{" "}
+            {pageRows.length} {t("of")} {totalEstimate}
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -270,19 +304,34 @@ export function HistoricalLedger() {
   );
 }
 
-const LedgerRow = memo(function LedgerRow({ row }: { row: TelemetryLog }) {
+const LedgerRowView = memo(function LedgerRowView({
+  row,
+  processingLabel,
+  deleteLabel,
+  pending,
+  onDelete,
+}: {
+  row: LedgerRow;
+  processingLabel: string;
+  deleteLabel: string;
+  pending: boolean;
+  onDelete: (id: number) => void;
+}) {
   const time = new Date(row.created_at);
   const timeLabel = Number.isNaN(time.getTime())
     ? row.created_at
     : time.toLocaleString();
+  const status = row.water_status?.trim()
+    ? row.water_status
+    : processingLabel;
 
   return (
-    <tr className="hover:bg-white/[0.02] transition-colors">
-      <td className="px-4 py-2.5 font-data-mono text-xs text-on-surface-variant whitespace-nowrap">
+    <tr className="hover:bg-[var(--row-hover)] transition-colors">
+      <td className="px-4 py-2.5 font-data-mono text-xs text-on-surface whitespace-nowrap">
         {timeLabel}
       </td>
-      <td className="px-4 py-2.5 font-data-mono text-xs text-primary tracking-wide">
-        {row.device_id}
+      <td className="px-4 py-2.5 font-data-mono text-xs text-primary tracking-wide font-semibold">
+        {row.device_name || row.device_id}
       </td>
       <td className="px-4 py-2.5 font-data-mono text-xs text-on-surface">
         {formatNum(row.ph, 2)}
@@ -300,8 +349,18 @@ const LedgerRow = memo(function LedgerRow({ row }: { row: TelemetryLog }) {
         <span
           className={`px-2.5 py-1 rounded-full font-label-caps text-[10px] uppercase tracking-wider ${statusClass(row.water_status)}`}
         >
-          {statusDisplay(row.water_status)}
+          {status}
         </span>
+      </td>
+      <td className="px-4 py-2.5">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => onDelete(row.id)}
+          className="text-error-alert text-xs font-label-caps hover:underline disabled:opacity-40"
+        >
+          {deleteLabel}
+        </button>
       </td>
     </tr>
   );

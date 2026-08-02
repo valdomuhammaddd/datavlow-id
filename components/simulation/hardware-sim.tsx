@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { StatusDot } from "@/components/ui/status-dot";
 import { useGlobalUI } from "@/context/GlobalUIContext";
+import type { Device } from "@/types/database.types";
 
 type HardwareState = {
   device_id: string;
@@ -23,12 +25,28 @@ type HardwareState = {
 
 export function HardwareSim() {
   const { t } = useGlobalUI();
-  const [deviceId, setDeviceId] = useState("DV-7729");
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [deviceId, setDeviceId] = useState("");
   const [state, setState] = useState<HardwareState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
+  useEffect(() => {
+    void fetch("/api/v1/devices", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: { data?: Device[] } | null) => {
+        const list = json?.data ?? [];
+        setDevices(list);
+        setDeviceId((prev) => {
+          if (prev && list.some((d) => d.api_key === prev)) return prev;
+          return list[0]?.api_key ?? "";
+        });
+      })
+      .catch(() => undefined);
+  }, []);
+
   const load = useCallback(async () => {
+    if (!deviceId) return;
     const res = await fetch(
       `/api/v1/simulation/hardware?device_id=${encodeURIComponent(deviceId)}`,
       { cache: "no-store" },
@@ -46,7 +64,10 @@ export function HardwareSim() {
     void load();
   }, [load]);
 
+  const selected = devices.find((d) => d.api_key === deviceId);
+
   const act = (body: Record<string, unknown>) => {
+    if (!deviceId) return;
     start(async () => {
       const res = await fetch("/api/v1/simulation/hardware", {
         method: "POST",
@@ -69,7 +90,7 @@ export function HardwareSim() {
           {t("simulation")}
         </h2>
         <p className="text-on-surface-variant text-sm mt-1">
-          Virtual ESP32 LCD 16x2 + sensor bench
+          {t("simulationDesc")}
         </p>
       </header>
 
@@ -77,13 +98,28 @@ export function HardwareSim() {
         <section className="glass-panel rounded-xl p-6 space-y-4">
           <label className="block space-y-1">
             <span className="font-label-caps text-[10px] text-on-surface-variant">
-              DEVICE ID
+              {t("deviceNameLabel")}
             </span>
-            <input
-              value={deviceId}
-              onChange={(e) => setDeviceId(e.target.value)}
-              className="w-full bg-bg-obsidian border border-border-glass rounded-lg px-3 py-2.5 text-sm"
-            />
+            {devices.length ? (
+              <div className="flex items-center gap-2">
+                <select
+                  value={deviceId}
+                  onChange={(e) => setDeviceId(e.target.value)}
+                  className="w-full bg-bg-obsidian border border-border-glass rounded-lg px-3 py-2.5 text-sm text-on-surface"
+                >
+                  {devices.map((d) => (
+                    <option key={d.id} value={d.api_key}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+                {selected ? <StatusDot status={selected.status} /> : null}
+              </div>
+            ) : (
+              <p className="text-sm text-on-surface-variant py-2">
+                {t("noDeviceSelect")}
+              </p>
+            )}
           </label>
 
           <div className="rounded-lg bg-black border-4 border-zinc-700 p-4 font-data-mono text-[#33ff66] shadow-inner">
@@ -99,43 +135,43 @@ export function HardwareSim() {
           <div className="flex gap-3">
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || !deviceId}
               onClick={() => act({ action: "button_press", button: "left" })}
-              className="flex-1 py-3 rounded-lg border border-border-glass font-label-caps text-xs"
+              className="flex-1 py-3 rounded-lg border border-border-glass font-label-caps text-xs text-on-surface"
             >
-              ◀ LEFT
+              {t("left")}
             </button>
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || !deviceId}
               onClick={() => act({ action: "button_press", button: "right" })}
-              className="flex-1 py-3 rounded-lg border border-border-glass font-label-caps text-xs"
+              className="flex-1 py-3 rounded-lg border border-border-glass font-label-caps text-xs text-on-surface"
             >
-              RIGHT ▶
+              {t("right")}
             </button>
           </div>
 
           <div className="flex gap-3">
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || !deviceId}
               onClick={() =>
                 act({
                   action: "toggle_sensors",
                   sensors_enabled: !state?.sensors_enabled,
                 })
               }
-              className="flex-1 py-3 rounded-lg bg-surface-container font-label-caps text-xs"
+              className="flex-1 py-3 rounded-lg bg-surface-container font-label-caps text-xs text-on-surface"
             >
-              TOGGLE SENSORS
+              {t("toggleSensors")}
             </button>
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || !deviceId}
               onClick={() => act({ action: "refresh_lcd" })}
               className="flex-1 py-3 rounded-lg bg-primary-container text-on-primary-container font-label-caps text-xs font-bold"
             >
-              REFRESH LCD
+              {t("refreshLcd")}
             </button>
           </div>
         </section>
@@ -156,11 +192,13 @@ export function HardwareSim() {
                   ["Voltage", state.voltage],
                 ] as const
               ).map(([label, value]) => (
-                <div key={label} className="rounded-lg bg-bg-obsidian p-3">
+                <div key={label} className="rounded-lg bg-bg-obsidian border border-border-glass p-3">
                   <p className="text-[10px] font-label-caps text-on-surface-variant">
                     {label}
                   </p>
-                  <p className="text-headline-md font-headline-md">{value}</p>
+                  <p className="text-headline-md font-headline-md text-on-surface">
+                    {value}
+                  </p>
                 </div>
               ))}
             </div>
@@ -169,7 +207,7 @@ export function HardwareSim() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || !deviceId}
               onClick={() =>
                 act({
                   action: "set_readings",
@@ -179,13 +217,13 @@ export function HardwareSim() {
                   temp: 25.4,
                 })
               }
-              className="py-2 rounded-lg border border-border-glass text-xs font-label-caps"
+              className="py-2 rounded-lg border border-border-glass text-xs font-label-caps text-on-surface"
             >
-              NOMINAL SAMPLE
+              {t("nominalSample")}
             </button>
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || !deviceId}
               onClick={() =>
                 act({
                   action: "set_readings",
@@ -197,7 +235,7 @@ export function HardwareSim() {
               }
               className="py-2 rounded-lg border border-error-alert/40 text-error-alert text-xs font-label-caps"
             >
-              ALERT SAMPLE
+              {t("alertSample")}
             </button>
           </div>
 
@@ -213,11 +251,6 @@ export function HardwareSim() {
               Uptime: {state.uptime_seconds}s
             </p>
           ) : null}
-          <p className="text-xs text-on-surface-variant">
-            NOMINAL / ALERT SAMPLE juga mengirim ke{" "}
-            <span className="text-primary">telemetry_logs</span> (device_id =
-            API key simulasi) sehingga Dashboard & Analytics ikut live.
-          </p>
 
           {error ? (
             <p className="text-error-alert text-sm font-label-caps">{error}</p>

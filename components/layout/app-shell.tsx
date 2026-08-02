@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
+import { AlertsBell } from "@/components/ui/alerts-bell";
 import { ThemeLanguageControls } from "@/components/ui/theme-language-controls";
 import { NetworkHealthBadge } from "@/components/ui/network-health-badge";
 import { useGlobalUI } from "@/context/GlobalUIContext";
@@ -44,31 +45,30 @@ export function AppShell({
 
   return (
     <>
-      <header className="fixed top-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface-glass backdrop-blur-xl border-b border-border-glass md:pl-72">
-        <div className="flex items-center gap-4">
+      {/* Header starts after sidebar so brand is never covered by blur */}
+      <header className="fixed top-0 left-0 right-0 md:left-64 z-50 flex justify-end items-center px-4 sm:px-margin-desktop h-16 bg-[var(--surface-glass)] backdrop-blur-xl border-b border-border-glass">
+        <div className="absolute left-4 md:hidden">
           <Link
             href="/dashboard"
-            className="md:hidden font-headline-md text-primary font-bold tracking-tighter"
+            className="font-headline-md text-primary font-bold tracking-tighter"
           >
             DATAVLOW.ID
           </Link>
-          <span className="hidden md:inline font-label-caps text-label-caps text-on-surface-variant">
-            COMMAND CENTER
-          </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <NetworkHealthBadge />
+          <AlertsBell />
           <ThemeLanguageControls />
         </div>
       </header>
 
-      <aside className="fixed left-0 top-0 h-full hidden md:flex flex-col py-8 bg-bg-obsidian border-r border-border-glass w-64 z-40">
-        <Link href="/dashboard" className="px-6 mb-8 block">
+      <aside className="fixed left-0 top-0 h-full hidden md:flex flex-col py-6 bg-[var(--sidebar-bg)] border-r border-border-glass w-64 z-40">
+        <Link href="/dashboard" className="px-6 mb-6 block pt-1">
           <div className="font-headline-md text-primary tracking-tight">
             DATAVLOW.ID
           </div>
-          <p className="font-label-caps text-[10px] text-on-surface-variant opacity-60">
-            {t("commandCenter")}
+          <p className="font-label-caps text-[10px] text-on-surface-variant opacity-70 mt-0.5">
+            IoT Water Quality
           </p>
         </Link>
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
@@ -129,7 +129,7 @@ export function AppShell({
         className={
           wide
             ? "md:ml-64 pt-20 min-h-screen pb-28 md:pb-8"
-            : "md:ml-64 pt-20 px-margin-desktop min-h-screen pb-28 md:pb-8"
+            : "md:ml-64 pt-20 px-4 sm:px-margin-desktop min-h-screen pb-28 md:pb-8"
         }
       >
         {children}

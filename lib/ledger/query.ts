@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { toPositiveInt } from "@/lib/api/validate";
-import type { Database, WaterStatus } from "@/types/database.types";
+import type { Database, TelemetryLog, WaterStatus } from "@/types/database.types";
+
+export type LedgerRow = TelemetryLog & {
+  device_name: string;
+};
 
 export interface LedgerFilters {
   nodeId?: string;
@@ -32,6 +36,24 @@ export function parseLedgerFilters(
   };
 }
 
+async function deviceNameMap(
+  supabase: SupabaseClient<Database>,
+  keys: string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (!keys.length) return map;
+
+  const { data } = await supabase
+    .from("devices")
+    .select("api_key, name")
+    .in("api_key", keys);
+
+  for (const d of data ?? []) {
+    map.set(d.api_key, d.name);
+  }
+  return map;
+}
+
 export async function queryLedger(
   supabase: SupabaseClient<Database>,
   filters: LedgerFilters,
@@ -39,13 +61,27 @@ export async function queryLedger(
   const from = (filters.page - 1) * filters.pageSize;
   const to = from + filters.pageSize - 1;
 
+  // Resolve device-name search → matching api_keys
+  let deviceKeysFromName: string[] | null = null;
+  if (filters.nodeId) {
+    const { data: named } = await supabase
+      .from("devices")
+      .select("api_key")
+      .ilike("name", `%${filters.nodeId}%`);
+    deviceKeysFromName = (named ?? []).map((d) => d.api_key);
+  }
+
   let query = supabase
     .from("telemetry_logs")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false });
 
   if (filters.nodeId) {
-    query = query.ilike("device_id", `%${filters.nodeId}%`);
+    if (deviceKeysFromName && deviceKeysFromName.length > 0) {
+      query = query.in("device_id", deviceKeysFromName);
+    } else {
+      query = query.ilike("device_id", `%${filters.nodeId}%`);
+    }
   }
   if (filters.status) {
     query = query.eq("water_status", filters.status);
@@ -58,12 +94,29 @@ export async function queryLedger(
   }
 
   const { data, error, count } = await query.range(from, to);
+  const rows = data ?? [];
+  const names = await deviceNameMap(
+    supabase,
+    [...new Set(rows.map((r) => r.device_id))],
+  );
+
+  const enriched: LedgerRow[] = rows.map((r) => ({
+    ...r,
+    device_name: names.get(r.device_id) ?? r.device_id,
+  }));
 
   return {
-    rows: data ?? [],
+    rows: enriched,
     total: count ?? 0,
     page: filters.page,
     pageSize: filters.pageSize,
     error,
   };
+}
+
+export async function deleteLedgerRow(
+  supabase: SupabaseClient<Database>,
+  id: number,
+) {
+  return supabase.from("telemetry_logs").delete().eq("id", id);
 }

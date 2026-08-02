@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useDeferredValue, useMemo } from "react";
+import { memo, useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -15,13 +14,14 @@ import {
 
 import { AppShell } from "@/components/layout/app-shell";
 import { FuzzyScoreGauge } from "@/components/dashboard/fuzzy-score-gauge";
+import { StatusDot } from "@/components/ui/status-dot";
 import { useGlobalUI } from "@/context/GlobalUIContext";
 import { useFleetStats } from "@/hooks/useFleetStats";
 import {
   useRealtimeTelemetry,
   type RealtimeChartPoint as ChartPoint,
 } from "@/hooks/useRealtimeTelemetry";
-import type { TelemetryLog, WaterStatus } from "@/types/database.types";
+import type { Device, TelemetryLog, WaterStatus } from "@/types/database.types";
 
 function formatNum(value: number | null | undefined, digits = 1): string {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
@@ -30,9 +30,9 @@ function formatNum(value: number | null | undefined, digits = 1): string {
   return Number(value).toFixed(digits);
 }
 
-/** Banner / KPI status — missing water_status → Memproses... */
+/** Banner / KPI status — missing water_status → Processing... */
 function statusLabel(status: WaterStatus | string | null | undefined): string {
-  if (!status) return "Memproses...";
+  if (!status) return "…";
   return String(status);
 }
 
@@ -70,10 +70,23 @@ export function PrecisionTelemetryDashboard() {
   const { latest, chartSeries, isLive, isLoading, error, logs } =
     useRealtimeTelemetry();
   const fleet = useFleetStats();
+  const [devices, setDevices] = useState<Device[]>([]);
+
+  useEffect(() => {
+    void fetch("/api/v1/devices", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: { data?: Device[] } | null) => {
+        if (json?.data) setDevices(json.data);
+      })
+      .catch(() => undefined);
+  }, []);
 
   const deferredSeries = useDeferredValue(chartSeries);
 
-  console.log("Dashboard bind — latest:", latest, "series:", chartSeries.length);
+  const activeDevice = useMemo(() => {
+    if (!latest?.device_id) return null;
+    return devices.find((d) => d.api_key === latest.device_id) ?? null;
+  }, [devices, latest?.device_id]);
 
   const waterStatus = latest?.water_status ?? null;
   const crispScore =
@@ -81,11 +94,11 @@ export function PrecisionTelemetryDashboard() {
   const actionMessage = latest?.action_message ?? null;
 
   const badge = useMemo(() => {
-    if (!waterStatus) return "Memproses...";
+    if (!waterStatus) return t("processing");
     if (waterStatus === "Baik") return t("systemOptimal");
     if (waterStatus === "Cukup Baik") return t("systemCaution");
     if (waterStatus === "Tidak Baik") return t("systemAlert");
-    return "Memproses...";
+    return t("processing");
   }, [waterStatus, t]);
 
   return (
@@ -93,18 +106,33 @@ export function PrecisionTelemetryDashboard() {
       <div className="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
         <div>
           <p className="font-label-caps text-[10px] text-primary tracking-[0.14em]">
-            REAL-TIME GRAPH VIEW
+            {t("realTime")} GRAPH VIEW
           </p>
           <h2 className="font-display text-2xl font-bold text-on-surface tracking-tight">
-            Precision Telemetry
+            {t("precisionTelemetry")}
           </h2>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            {activeDevice ? (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-glass bg-surface-container/70">
+                <StatusDot status={activeDevice.status} />
+                <span className="font-label-caps text-[10px] text-on-surface-variant">
+                  {t("activeDevice")}
+                </span>
+                <span className="font-data-mono text-sm text-primary font-semibold">
+                  {activeDevice.name}
+                </span>
+                <span className="font-label-caps text-[10px] uppercase text-on-surface-variant">
+                  {activeDevice.status === "online" ? t("online") : t("offline")}
+                </span>
+              </div>
+            ) : latest?.device_id ? (
+              <span className="text-sm text-on-surface-variant">
+                {t("unknownDevice")}
+              </span>
+            ) : null}
+          </div>
           <p className="text-sm text-on-surface-variant mt-1">
-            Live KPI + multi-line chart (last {logs.length}/30 points). Spreadsheet
-            data is on{" "}
-            <Link href="/ledger" className="text-primary hover:underline">
-              Ledger
-            </Link>
-            .
+            {t("precisionTelemetryDesc")} ({logs.length}/30)
           </p>
         </div>
         <Link
@@ -112,7 +140,7 @@ export function PrecisionTelemetryDashboard() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border-glass font-label-caps text-[11px] hover:border-primary/40"
         >
           <span className="material-symbols-outlined text-[18px]">table_chart</span>
-          OPEN SPREADSHEET LEDGER
+          {t("openSpreadsheetLedger")}
         </Link>
       </div>
 
@@ -141,8 +169,8 @@ export function PrecisionTelemetryDashboard() {
       <KineticChart
         series={deferredSeries}
         isLive={isLive}
-        title="Kinetic Sensor Streams"
-        subtitle="Multi-line · pH · TDS · Turbidity · Temp · X = HH:mm"
+        title={t("kineticStreams")}
+        subtitle={t("kineticStreamsDesc")}
         liveLabel={t("liveStream")}
         connectingLabel={t("connecting")}
       />
@@ -375,6 +403,37 @@ const KpiCard = memo(function KpiCard({
   );
 });
 
+const SERIES_META = [
+  {
+    key: "ph" as const,
+    label: "pH",
+    unit: "pH",
+    color: "#00d1ff",
+    gradientId: "gradPh",
+  },
+  {
+    key: "tds" as const,
+    label: "TDS",
+    unit: "ppm",
+    color: "#ff8a00",
+    gradientId: "gradTds",
+  },
+  {
+    key: "turbidity" as const,
+    label: "Turbidity",
+    unit: "NTU",
+    color: "#00ffc2",
+    gradientId: "gradTurb",
+  },
+  {
+    key: "temp" as const,
+    label: "Temp",
+    unit: "°C",
+    color: "#feb127",
+    gradientId: "gradTemp",
+  },
+];
+
 const KineticChart = memo(function KineticChart({
   series,
   isLive,
@@ -391,11 +450,13 @@ const KineticChart = memo(function KineticChart({
   connectingLabel: string;
 }) {
   const bufferLoad = Math.min(100, Math.round((series.length / 30) * 100));
+  const tickFill = "var(--on-surface-variant)";
+  const gridStroke = "var(--grid-line)";
 
   return (
     <section className="mb-gutter">
-      <div className="glass-panel rounded-xl p-6 relative overflow-hidden min-h-[360px]">
-        <div className="flex justify-between items-start mb-4 relative z-10">
+      <div className="glass-panel rounded-xl p-6 relative overflow-hidden">
+        <div className="flex justify-between items-start mb-5 relative z-10">
           <div>
             <h3 className="text-headline-md font-headline-md text-on-surface">
               {title}
@@ -420,112 +481,129 @@ const KineticChart = memo(function KineticChart({
           </div>
         </div>
 
-        <div className="h-72 w-full">
-          {series.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-on-surface-variant font-label-caps text-sm">
-              Waiting for telemetry…
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={series}
-                margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid
-                  stroke="rgba(255,255,255,0.06)"
-                  strokeDasharray="3 3"
-                />
-                <XAxis
-                  dataKey="time"
-                  tick={{ fill: "#bbc9cf", fontSize: 11 }}
-                  axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
-                  tickLine={false}
-                />
-                <YAxis
-                  yAxisId="left"
-                  tick={{ fill: "#bbc9cf", fontSize: 11 }}
-                  axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
-                  tickLine={false}
-                  width={40}
-                  label={{
-                    value: "pH / NTU / °C",
-                    angle: -90,
-                    position: "insideLeft",
-                    fill: "#859399",
-                    fontSize: 10,
-                  }}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  tick={{ fill: "#bbc9cf", fontSize: 11 }}
-                  axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
-                  tickLine={false}
-                  width={48}
-                  label={{
-                    value: "TDS ppm",
-                    angle: 90,
-                    position: "insideRight",
-                    fill: "#859399",
-                    fontSize: 10,
-                  }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "#1d2026",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                  labelStyle={{ color: "#a4e6ff" }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: 11, color: "#bbc9cf" }}
-                />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="ph"
-                  name="pH"
-                  stroke="#00d1ff"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="tds"
-                  name="TDS"
-                  stroke="#ffb77f"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="turbidity"
-                  name="Turbidity"
-                  stroke="#00FFC2"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="temp"
-                  name="Temp"
-                  stroke="#feb127"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+        {series.length === 0 ? (
+          <div className="h-48 flex items-center justify-center text-on-surface-variant font-label-caps text-sm">
+            Waiting for telemetry…
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {SERIES_META.map((meta, index) => {
+              const latestVal = series[series.length - 1]?.[meta.key];
+              return (
+                <div
+                  key={meta.key}
+                  className="rounded-xl border border-border-glass bg-surface-container-low/60 p-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{
+                          background: meta.color,
+                          boxShadow: `0 0 10px ${meta.color}`,
+                        }}
+                      />
+                      <span className="font-label-caps text-[11px] text-on-surface tracking-wider">
+                        {meta.label}
+                      </span>
+                      <span className="font-label-caps text-[10px] text-on-surface-variant">
+                        {meta.unit}
+                      </span>
+                    </div>
+                    <span
+                      className="font-data-mono text-lg font-semibold tabular-nums"
+                      style={{ color: meta.color }}
+                    >
+                      {typeof latestVal === "number"
+                        ? latestVal.toFixed(meta.key === "tds" ? 0 : 1)
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="h-40 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={series}
+                        margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient
+                            id={meta.gradientId}
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor={meta.color}
+                              stopOpacity={0.45}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor={meta.color}
+                              stopOpacity={0.02}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          stroke={gridStroke}
+                          strokeDasharray="3 3"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="time"
+                          tick={{ fill: tickFill, fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                          minTickGap={28}
+                        />
+                        <YAxis
+                          tick={{ fill: tickFill, fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={36}
+                          domain={["auto", "auto"]}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: "var(--surface-container)",
+                            border: "1px solid var(--glass-border)",
+                            borderRadius: 8,
+                            fontSize: 12,
+                            color: "var(--on-surface)",
+                          }}
+                          labelStyle={{ color: meta.color }}
+                          formatter={(value: number) => [
+                            `${Number(value).toFixed(meta.key === "tds" ? 0 : 2)} ${meta.unit}`,
+                            meta.label,
+                          ]}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey={meta.key}
+                          name={meta.label}
+                          stroke={meta.color}
+                          strokeWidth={2.5}
+                          fill={`url(#${meta.gradientId})`}
+                          dot={false}
+                          activeDot={{
+                            r: 4,
+                            strokeWidth: 0,
+                            fill: meta.color,
+                          }}
+                          isAnimationActive
+                          animationBegin={index * 120}
+                          animationDuration={900}
+                          animationEasing="ease-out"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
